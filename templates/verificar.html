@@ -41,7 +41,7 @@
 
         .card p {
             color: #555;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         input {
@@ -72,6 +72,15 @@
             margin-top: 20px;
         }
 
+        .codigo-demo {
+            background: #eef2f7;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #333;
+        }
+
         .footer {
             text-align: center;
             margin-top: 60px;
@@ -95,6 +104,13 @@
             Ingréselo a continuación para continuar.
         </p>
 
+        <!-- CÓDIGO DEMO SI FALLA EL CORREO -->
+        {% if codigo_demo %}
+        <div class="codigo-demo">
+            Código de demostración: <strong>{{ codigo_demo }}</strong>
+        </div>
+        {% endif %}
+
         <form action="/verificar" method="post">
             <input type="text" name="codigo" placeholder="000000" required>
             <br>
@@ -113,4 +129,3 @@
 
 </body>
 </html>
-
