@@ -1,16 +1,271 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
+    <meta charset="UTF-8">
     <title>Renta Fácil</title>
-</head>
-<body>
-    <h1>Renta Fácil</h1>
-    <h3>Menos trámites, más país.</h3>
 
-    <form action="/consultar" method="post">
-        <label>Ingrese su cédula:</label>
-        <input type="text" name="cedula">
-        <button type="submit">Consultar renta automática</button>
-    </form>
+    <!-- Fuente moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to bottom, #f4f6f8, #e9eef6);
+            color: #1a1a1a;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, #0A2A66, #2F6FED);
+            color: white;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #0A2A66, #2F6FED);
+            color: white;
+            padding: 80px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hero-text {
+            max-width: 500px;
+        }
+
+        .hero h1 {
+            font-size: 52px;
+            margin-bottom: 10px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .hero button {
+            background: linear-gradient(135deg, #00A859, #00c46a);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: 0.2s;
+        }
+
+        .hero button:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero img {
+            width: 320px;
+        }
+
+        section {
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .cards {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, white, #f1f4fa);
+            padding: 30px;
+            border-radius: 12px;
+            width: 260px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            transition: 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h3 {
+            color: #2F6FED;
+        }
+
+        .steps {
+            text-align: left;
+            margin-top: 40px;
+        }
+
+        .step {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-left: 5px solid #2F6FED;
+        }
+
+        .consulta {
+            background: linear-gradient(135deg, white, #f1f4fa);
+            width: 420px;
+            margin: 40px auto;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        input {
+            width: 85%;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        button.submit {
+            background: linear-gradient(135deg, #2F6FED, #4a85ff);
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        footer {
+            background: linear-gradient(90deg, #0A2A66, #2F6FED);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">
+    Renta Fácil — Sistema Nacional de Declaración Automática
+</div>
+
+<div class="hero">
+    <div class="hero-text">
+        <h1>Renta Fácil</h1>
+        <p>
+            Menos trámites, más país.  
+            El sistema que declara sus impuestos automáticamente,
+            sin formularios, sin contadores y sin complicaciones.
+        </p>
+        <button onclick="document.getElementById('consulta').scrollIntoView({behavior: 'smooth'})">
+            Consultar mi renta
+        </button>
+    </div>
+
+    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135768.png" alt="Ciudadano digital">
+</div>
+
+<section>
+    <div class="container">
+        <h2>¿Qué es Renta Fácil?</h2>
+        <p>
+            Renta Fácil es el nuevo sistema nacional que automatiza la declaración
+            de impuestos para todos los ciudadanos, integrando información financiera
+            para generar resultados automáticos, transparentes y rápidos.
+        </p>
+    </div>
+</section>
+
+<section style="background:#eef2f7;">
+    <div class="container">
+        <h2>¿Cómo funciona?</h2>
+
+        <div class="steps">
+            <div class="step">
+                <strong>Paso 1:</strong> Registro automático al cumplir 18 años.
+            </div>
+            <div class="step">
+                <strong>Paso 2:</strong> Integración de transacciones y facturación.
+            </div>
+            <div class="step">
+                <strong>Paso 3:</strong> Cálculo automático de base gravable.
+            </div>
+            <div class="step">
+                <strong>Paso 4:</strong> Generación automática de declaración.
+            </div>
+            <div class="step">
+                <strong>Paso 5:</strong> Resultado final sin trámites.
+            </div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        <h2>Beneficios del sistema</h2>
+
+        <div class="cards">
+            <div class="card">
+                <h3>Automático</h3>
+                <p>El sistema calcula su renta sin formularios ni contadores.</p>
+            </div>
+
+            <div class="card">
+                <h3>Transparente</h3>
+                <p>Todas las transacciones quedan registradas de forma segura.</p>
+            </div>
+
+            <div class="card">
+                <h3>Rápido</h3>
+                <p>Obtenga su resultado tributario en menos de un minuto.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section style="background:#eef2f7;">
+    <div class="container">
+        <h2>Seguridad del sistema</h2>
+        <p>
+            El sistema utiliza autenticación por código, cifrado de datos
+            y validación de identidad para proteger la información tributaria.
+        </p>
+    </div>
+</section>
+
+<section id="consulta">
+    <div class="consulta">
+        <h2>Consultar renta automática</h2>
+
+        <form action="/consultar" method="post">
+            <input type="text" name="cedula" placeholder="Ingrese su cédula" required>
+            <br>
+            <button class="submit" type="submit">Consultar</button>
+        </form>
+
+        <p style="font-size: 12px; color: gray; margin-top: 20px;">
+            Plataforma en fase demostrativa.
+        </p>
+    </div>
+</section>
+
+<footer>
+    Sistema Renta Fácil © Gobierno Digital de Colombia  
+    Plataforma demostrativa para modernización tributaria.
+</footer>
+
 </body>
 </html>
