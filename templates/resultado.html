@@ -1,17 +1,166 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Resultado</title>
+    <meta charset="UTF-8">
+    <title>Resultado - Renta Fácil</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to bottom, #f4f6f8, #e9eef6);
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, #0A2A66, #2F6FED);
+            color: white;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+        }
+
+        .documento {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .header-doc {
+            text-align: center;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .header-doc h1 {
+            color: #0A2A66;
+            margin: 5px 0;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section h3 {
+            color: #2F6FED;
+            margin-bottom: 10px;
+        }
+
+        .fila {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .total {
+            background: #eef2f7;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .total h2 {
+            color: #0A2A66;
+            margin: 10px 0;
+        }
+
+        .estado {
+            font-size: 18px;
+            font-weight: 600;
+            color: #00A859;
+        }
+
+        .footer-doc {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 13px;
+            color: gray;
+        }
+
+        .boton-volver {
+            display: block;
+            margin: 30px auto;
+            text-align: center;
+        }
+
+        .boton-volver a {
+            background: linear-gradient(135deg, #2F6FED, #4a85ff);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+    </style>
 </head>
+
 <body>
-    <h2>Resultado de su declaración</h2>
 
-    <p><strong>Nombre:</strong> {{ data.nombre }}</p>
-    <p><strong>Ingresos:</strong> ${{ data.ingresos }}</p>
-    <p><strong>Gastos:</strong> ${{ data.gastos }}</p>
-    <p><strong>Base gravable:</strong> ${{ data.base }}</p>
-    <p><strong>Impuesto:</strong> ${{ data.impuesto }}</p>
+<div class="navbar">
+    Renta Fácil — Sistema Nacional de Declaración Automática
+</div>
 
-    <p><strong>Declaración generada automáticamente.</strong></p>
+<div class="container">
+    <div class="documento">
+
+        <div class="header-doc">
+            <h1>Certificado de Declaración Automática</h1>
+            <p>Sistema Nacional Renta Fácil</p>
+        </div>
+
+        <div class="section">
+            <h3>Datos del ciudadano</h3>
+            <div class="fila">
+                <span>Nombre:</span>
+                <span>{{ data.nombre }}</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Resumen tributario</h3>
+            <div class="fila">
+                <span>Ingresos anuales:</span>
+                <span>${{ data.ingresos }}</span>
+            </div>
+            <div class="fila">
+                <span>Gastos deducibles:</span>
+                <span>${{ data.gastos }}</span>
+            </div>
+            <div class="fila">
+                <span>Base gravable:</span>
+                <span>${{ data.base }}</span>
+            </div>
+        </div>
+
+        <div class="total">
+            <h2>Impuesto calculado</h2>
+            <h1>${{ data.impuesto }}</h1>
+            <div class="estado">
+                Declaración generada automáticamente
+            </div>
+        </div>
+
+        <div class="footer-doc">
+            Documento generado por el sistema Renta Fácil.  
+            Plataforma demostrativa para modernización tributaria.
+        </div>
+
+    </div>
+
+    <div class="boton-volver">
+        <a href="/">Volver al inicio</a>
+    </div>
+</div>
+
 </body>
 </html>
