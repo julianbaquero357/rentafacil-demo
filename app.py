@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, redirect
+from flask import Flask, render_template, request, session, redirect, send_file
 from functools import wraps
 import os
 import json
@@ -6,12 +6,14 @@ import random
 import sqlite3
 import time
 import smtplib
+import io
 from email.mime.text import MIMEText
 
 import gspread
 from google.oauth2.service_account import Credentials
 
 from sheets_sync import sync_transacciones
+from pdf_generator import generar_pdf_declaracion
 
 app = Flask(__name__)
 app.secret_key = "clave_demo_rentafacil"
@@ -32,9 +34,8 @@ def enviar_codigo(correo, codigo):
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
             server.login(EMAIL, PASSWORD)
             server.send_message(msg)
-
     except Exception as e:
-        print("No se pudo enviar el correo:", e)
+        print("Correo no enviado:", e)
         print("Código demo:", codigo)
 
 # =====================================================
@@ -56,7 +57,7 @@ def normalizar_cedula(valor):
         return str(valor).strip()
 
 # =====================================================
-# AUTO SYNC CONTROLADO (sin scheduler)
+# AUTO SYNC
 # =====================================================
 SYNC_INTERVAL_SEC = 60
 
@@ -79,21 +80,19 @@ def maybe_sync():
 
     if now - last_ts < SYNC_INTERVAL_SEC:
         conn.close()
-        return {"synced": False}
+        return
 
     try:
-        nuevos = sync_transacciones()
+        sync_transacciones()
         cur.execute("INSERT OR REPLACE INTO sync_state (k, v) VALUES ('last_sync_ts', ?)", (str(now),))
         conn.commit()
-        conn.close()
-        return {"synced": True, "nuevos": nuevos}
     except Exception as e:
-        conn.close()
-        print("Error en sync:", e)
-        return {"synced": False, "error": str(e)}
+        print("Error sync:", e)
+
+    conn.close()
 
 # =====================================================
-# LOGIN ADMINISTRADOR
+# LOGIN ADMIN
 # =====================================================
 def login_required(f):
     @wraps(f)
@@ -123,20 +122,7 @@ def admin_logout():
     return redirect("/admin/login")
 
 # =====================================================
-# VALIDAR USUARIO
-# =====================================================
-def usuario_existe(cedula):
-    gc = conectar_google()
-    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
-    ws = sheet.worksheet("usuarios")
-    usuarios = ws.get_all_records()
-
-    cedula = normalizar_cedula(cedula)
-
-    return any(normalizar_cedula(u["cedula"]) == cedula for u in usuarios)
-
-# =====================================================
-# CÁLCULO DESDE HISTORIAL
+# CÁLCULO RENTA
 # =====================================================
 def calcular_renta(cedula):
     gc = conectar_google()
@@ -155,7 +141,7 @@ def calcular_renta(cedula):
 
     for u in usuarios:
         if normalizar_cedula(u["cedula"]) == cedula:
-            nombre = u["nombre"]
+            nombre = u.get("nombre", "Contribuyente")
             break
 
     for r in historial:
@@ -166,56 +152,22 @@ def calcular_renta(cedula):
                 gastos += float(r["valor"])
 
     base = ingresos - gastos
-    impuesto = base * 0.10 if base > 0 else 0
 
     return {
         "nombre": nombre,
         "ingresos": ingresos,
         "gastos": gastos,
-        "base": base,
-        "impuesto": impuesto
+        "base": base
     }
 
 # =====================================================
-# RUTAS PÚBLICAS
+# RUTAS
 # =====================================================
 @app.route("/")
 def inicio():
     maybe_sync()
     return render_template("index.html")
 
-@app.route("/consultar", methods=["POST"])
-def consultar():
-    maybe_sync()
-
-    cedula = request.form["cedula"]
-
-    if not usuario_existe(cedula):
-        return "Usuario no encontrado"
-
-    codigo = str(random.randint(100000, 999999))
-    session["codigo"] = codigo
-    session["cedula"] = cedula
-
-    enviar_codigo(EMAIL, codigo)
-
-    return render_template("verificar.html", codigo_demo=codigo)
-
-@app.route("/verificar", methods=["POST"])
-def verificar():
-    codigo_usuario = request.form["codigo"]
-
-    if codigo_usuario != session.get("codigo"):
-        return "Código incorrecto"
-
-    cedula = session.get("cedula")
-    resultado = calcular_renta(cedula)
-
-    return render_template("resultado.html", data=resultado)
-
-# =====================================================
-# PANEL ADMIN
-# =====================================================
 @app.route("/admin")
 @login_required
 def admin_panel():
@@ -223,21 +175,11 @@ def admin_panel():
 
     gc = conectar_google()
     sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
-    usuarios_ws = sheet.worksheet("usuarios")
-    historial_ws = sheet.worksheet("historial")
+    usuarios = sheet.worksheet("usuarios").get_all_records()
+    historial = sheet.worksheet("historial").get_all_records()
 
-    usuarios = usuarios_ws.get_all_records()
-    historial = historial_ws.get_all_records()
-
-    total_ingresos = 0
-    total_gastos = 0
-
-    for r in historial:
-        if r["tipo"] == "ingreso":
-            total_ingresos += float(r["valor"])
-        elif r["tipo"] == "gasto":
-            total_gastos += float(r["valor"])
-
+    total_ingresos = sum(float(r["valor"]) for r in historial if r["tipo"] == "ingreso")
+    total_gastos = sum(float(r["valor"]) for r in historial if r["tipo"] == "gasto")
     total_base = total_ingresos - total_gastos
 
     return render_template("admin.html",
@@ -250,20 +192,22 @@ def admin_panel():
 @login_required
 def admin_usuario():
     cedula = request.form["cedula"]
+    cedula = normalizar_cedula(cedula)
 
     gc = conectar_google()
     sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
-    usuarios_ws = sheet.worksheet("usuarios")
-    historial_ws = sheet.worksheet("historial")
-
-    usuarios = usuarios_ws.get_all_records()
-    historial = historial_ws.get_all_records()
+    usuarios = sheet.worksheet("usuarios").get_all_records()
+    historial = sheet.worksheet("historial").get_all_records()
 
     nombre = "No encontrado"
+    patrimonio = 0
+    deudas = 0
 
     for u in usuarios:
-        if normalizar_cedula(u["cedula"]) == normalizar_cedula(cedula):
-            nombre = u["nombre"]
+        if normalizar_cedula(u["cedula"]) == cedula:
+            nombre = u.get("nombre", "Contribuyente")
+            patrimonio = float(u.get("patrimonio", 0) or 0)
+            deudas = float(u.get("deudas", 0) or 0)
             break
 
     transacciones = []
@@ -271,7 +215,7 @@ def admin_usuario():
     gastos = 0
 
     for r in historial:
-        if normalizar_cedula(r["cedula"]) == normalizar_cedula(cedula):
+        if normalizar_cedula(r["cedula"]) == cedula:
             transacciones.append(r)
             if r["tipo"] == "ingreso":
                 ingresos += float(r["valor"])
@@ -279,7 +223,6 @@ def admin_usuario():
                 gastos += float(r["valor"])
 
     base = ingresos - gastos
-    impuesto = base * 0.10 if base > 0 else 0
 
     return render_template("admin_usuario.html",
                            nombre=nombre,
@@ -287,25 +230,48 @@ def admin_usuario():
                            ingresos=ingresos,
                            gastos=gastos,
                            base=base,
-                           impuesto=impuesto,
+                           patrimonio=patrimonio,
+                           deudas=deudas,
                            transacciones=transacciones)
 
-@app.route("/admin/sync")
+@app.route("/admin/pdf/<cedula>")
 @login_required
-def admin_sync():
-    resultado = maybe_sync()
-    return f"Sync: {resultado}"
+def admin_pdf(cedula):
+    cedula = normalizar_cedula(cedula)
+    resultado = calcular_renta(cedula)
 
-# =====================================================
-# HEALTH
-# =====================================================
-@app.route("/health")
-def health():
-    return {"ok": True}
+    gc = conectar_google()
+    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
+    usuarios = sheet.worksheet("usuarios").get_all_records()
 
-# =====================================================
-# EJECUCIÓN
-# =====================================================
+    patrimonio = 0
+    deudas = 0
+
+    for u in usuarios:
+        if normalizar_cedula(u["cedula"]) == cedula:
+            patrimonio = float(u.get("patrimonio", 0) or 0)
+            deudas = float(u.get("deudas", 0) or 0)
+            break
+
+    data_pdf = {
+        "cedula": cedula,
+        "nombre": resultado["nombre"],
+        "ingresos": resultado["ingresos"],
+        "gastos": resultado["gastos"],
+        "base": resultado["base"],
+        "patrimonio": patrimonio,
+        "deudas": deudas
+    }
+
+    pdf_bytes = generar_pdf_declaracion(data_pdf)
+
+    return send_file(
+        io.BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"Declaracion_RentaFacil_210_DEMO_{cedula}_AG2025.pdf"
+    )
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
