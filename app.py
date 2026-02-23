@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, session
+from flask import Flask, render_template, request, session, redirect
+from functools import wraps
 import os
 import json
 import random
@@ -15,9 +16,9 @@ from sheets_sync import sync_transacciones
 app = Flask(__name__)
 app.secret_key = "clave_demo_rentafacil"
 
-# =========================================
+# =====================================================
 # CONFIGURACIÓN CORREO DEMO
-# =========================================
+# =====================================================
 EMAIL = "rentafacildemo@gmail.com"
 PASSWORD = "ujky bszn wpaj jckv"
 
@@ -36,9 +37,9 @@ def enviar_codigo(correo, codigo):
         print("No se pudo enviar el correo:", e)
         print("Código demo:", codigo)
 
-# =========================================
+# =====================================================
 # GOOGLE SHEETS
-# =========================================
+# =====================================================
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 def conectar_google():
@@ -54,9 +55,9 @@ def normalizar_cedula(valor):
     except:
         return str(valor).strip()
 
-# =========================================
-# AUTO SYNC SIN SCHEDULER
-# =========================================
+# =====================================================
+# AUTO SYNC CONTROLADO (sin scheduler)
+# =====================================================
 SYNC_INTERVAL_SEC = 60
 
 def maybe_sync():
@@ -75,6 +76,7 @@ def maybe_sync():
     last_ts = float(row[0]) if row and row[0] else 0
 
     now = time.time()
+
     if now - last_ts < SYNC_INTERVAL_SEC:
         conn.close()
         return {"synced": False}
@@ -90,9 +92,39 @@ def maybe_sync():
         print("Error en sync:", e)
         return {"synced": False, "error": str(e)}
 
-# =========================================
+# =====================================================
+# LOGIN ADMINISTRADOR
+# =====================================================
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("admin_logged"):
+            return redirect("/admin/login")
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        usuario = request.form["usuario"]
+        password = request.form["password"]
+
+        if usuario == "admin" and password == "admin":
+            session["admin_logged"] = True
+            return redirect("/admin")
+        else:
+            return render_template("admin_login.html", error="Credenciales incorrectas")
+
+    return render_template("admin_login.html")
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("admin_logged", None)
+    return redirect("/admin/login")
+
+# =====================================================
 # VALIDAR USUARIO
-# =========================================
+# =====================================================
 def usuario_existe(cedula):
     gc = conectar_google()
     sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
@@ -100,11 +132,12 @@ def usuario_existe(cedula):
     usuarios = ws.get_all_records()
 
     cedula = normalizar_cedula(cedula)
+
     return any(normalizar_cedula(u["cedula"]) == cedula for u in usuarios)
 
-# =========================================
+# =====================================================
 # CÁLCULO DESDE HISTORIAL
-# =========================================
+# =====================================================
 def calcular_renta(cedula):
     gc = conectar_google()
     sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
@@ -143,9 +176,9 @@ def calcular_renta(cedula):
         "impuesto": impuesto
     }
 
-# =========================================
+# =====================================================
 # RUTAS PÚBLICAS
-# =========================================
+# =====================================================
 @app.route("/")
 def inicio():
     maybe_sync()
@@ -180,10 +213,11 @@ def verificar():
 
     return render_template("resultado.html", data=resultado)
 
-# =========================================
-# PANEL ADMINISTRADOR
-# =========================================
+# =====================================================
+# PANEL ADMIN
+# =====================================================
 @app.route("/admin")
+@login_required
 def admin_panel():
     maybe_sync()
 
@@ -213,6 +247,7 @@ def admin_panel():
                            total_base=total_base)
 
 @app.route("/admin/usuario", methods=["POST"])
+@login_required
 def admin_usuario():
     cedula = request.form["cedula"]
 
@@ -255,24 +290,22 @@ def admin_usuario():
                            impuesto=impuesto,
                            transacciones=transacciones)
 
-# =========================================
-# SYNC MANUAL
-# =========================================
 @app.route("/admin/sync")
+@login_required
 def admin_sync():
     resultado = maybe_sync()
     return f"Sync: {resultado}"
 
-# =========================================
-# HEALTH CHECK
-# =========================================
+# =====================================================
+# HEALTH
+# =====================================================
 @app.route("/health")
 def health():
     return {"ok": True}
 
-# =========================================
+# =====================================================
 # EJECUCIÓN
-# =========================================
+# =====================================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
