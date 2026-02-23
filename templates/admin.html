@@ -2,27 +2,177 @@
 <html>
 <head>
     <title>Panel Administrativo - Renta Fácil</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f4f6f9;
+        }
+
+        header {
+            background: #002855;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .logout {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            background: #c1121f;
+            padding: 8px 14px;
+            border-radius: 5px;
+        }
+
+        .container {
+            padding: 40px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            color: #002855;
+        }
+
+        .card p {
+            font-size: 22px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .search-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .search-box h2 {
+            margin-top: 0;
+            color: #002855;
+        }
+
+        input[type="text"] {
+            width: 300px;
+            padding: 10px;
+            font-size: 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 10px 18px;
+            font-size: 15px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: #00509d;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #003f7f;
+        }
+
+        .btn-sync {
+            background-color: #2a9d8f;
+            color: white;
+        }
+
+        .btn-sync:hover {
+            background-color: #1e7d71;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 13px;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Panel Administrativo</h1>
 
-    <p>Total Usuarios: {{ total_usuarios }}</p>
-    <p>Total Ingresos Globales: ${{ total_ingresos }}</p>
-    <p>Total Gastos Globales: ${{ total_gastos }}</p>
-    <p>Total Base Gravable Global: ${{ total_base }}</p>
+<header>
+    <h1>RENTA FÁCIL - PANEL ADMINISTRATIVO</h1>
+    <a href="/admin/logout" class="logout">Cerrar sesión</a>
+</header>
 
-    <hr>
+<div class="container">
 
-    <h2>Buscar Usuario</h2>
-    <form method="POST" action="/admin/usuario">
-        <input type="text" name="cedula" placeholder="Ingrese cédula">
-        <button type="submit">Buscar</button>
-    </form>
+    <div class="cards">
+        <div class="card">
+            <h3>Total Usuarios</h3>
+            <p>{{ total_usuarios }}</p>
+        </div>
 
-    <hr>
+        <div class="card">
+            <h3>Total Ingresos Globales</h3>
+            <p>${{ "{:,.0f}".format(total_ingresos) }}</p>
+        </div>
 
-    <form action="/admin/sync">
-        <button type="submit">Actualizar datos bancarios</button>
-    </form>
+        <div class="card">
+            <h3>Total Gastos Globales</h3>
+            <p>${{ "{:,.0f}".format(total_gastos) }}</p>
+        </div>
+
+        <div class="card">
+            <h3>Base Gravable Global</h3>
+            <p>${{ "{:,.0f}".format(total_base) }}</p>
+        </div>
+    </div>
+
+    <div class="search-box">
+        <h2>Buscar Contribuyente</h2>
+
+        <form method="POST" action="/admin/usuario">
+            <input type="text" name="cedula" placeholder="Ingrese número de cédula" required>
+            <button type="submit" class="btn-primary">Consultar</button>
+        </form>
+
+        <br><br>
+
+        <form action="/admin/sync">
+            <button type="submit" class="btn-sync">Actualizar Datos Bancarios</button>
+        </form>
+    </div>
+
+</div>
+
+<footer>
+    Sistema de Gestión Tributaria Automatizada - Renta Fácil © 2026
+</footer>
+
 </body>
 </html>
