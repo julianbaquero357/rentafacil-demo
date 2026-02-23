@@ -11,6 +11,18 @@ def conectar_google():
     creds = Credentials.from_service_account_info(sa_json, scopes=SCOPES)
     return gspread.authorize(creds)
 
+def normalizar_cedula(valor):
+    """
+    Convierte cualquier valor (1001, 1001.0, '1001', ' 1001 ') 
+    en string limpio: '1001'
+    """
+    if valor is None:
+        return ""
+    try:
+        return str(int(float(valor))).strip()
+    except:
+        return str(valor).strip()
+
 def sync_transacciones():
     gc = conectar_google()
 
@@ -21,14 +33,14 @@ def sync_transacciones():
     historial_ws = sheet_usuarios.worksheet("historial")
 
     usuarios_data = usuarios_ws.get_all_records()
-    usuarios = set(str(u["cedula"]).strip() for u in usuarios_data)
+
+    usuarios = set(normalizar_cedula(u["cedula"]) for u in usuarios_data)
 
     transacciones = sheet_bancos.get_all_records()
 
     conn = sqlite3.connect("renta.db")
     cur = conn.cursor()
 
-    # tabla para evitar duplicados
     cur.execute("""
         CREATE TABLE IF NOT EXISTS transacciones_vistas (
             id_transaccion TEXT PRIMARY KEY
@@ -38,18 +50,18 @@ def sync_transacciones():
     nuevos = 0
 
     for t in transacciones:
+
         tid = str(t["id_transaccion"]).strip()
 
-        # evitar duplicados
         cur.execute("SELECT 1 FROM transacciones_vistas WHERE id_transaccion=?", (tid,))
         if cur.fetchone():
             continue
 
         descripcion = (t["descripcion"] or "").strip()
-        cuenta_entrante = str(t["cuenta_entrante"]).strip()
-        cuenta_saliente = str(t["cuenta_saliente"]).strip()
+        cuenta_entrante = normalizar_cedula(t["cuenta_entrante"])
+        cuenta_saliente = normalizar_cedula(t["cuenta_saliente"])
         valor = float(t["valor"])
-        fecha = t["fecha"]
+        fecha = str(t["fecha"])
 
         # INGRESO
         if cuenta_entrante in usuarios:
@@ -79,7 +91,6 @@ def sync_transacciones():
             ])
             nuevos += 1
 
-        # marcar como procesada
         cur.execute("INSERT INTO transacciones_vistas VALUES (?)", (tid,))
 
     conn.commit()
