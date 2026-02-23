@@ -1,21 +1,34 @@
+from sheets_sync import sync_transacciones
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
+
 from flask import Flask, render_template, request, session, redirect
 import sqlite3
 import random
 import smtplib
 from email.mime.text import MIMEText
+import os
+import gspread
+import json
+from google.oauth2.service_account import Credentials
 
 app = Flask(__name__)
 app.secret_key = "clave_demo_rentafacil"
 
 # ===============================
-# CONFIGURACIÓN DEL CORREO DEMO
+# SCHEDULER (actualiza cada minuto)
 # ===============================
-EMAIL = "rentafacildemo@gmail.com"
-PASSWORD = "ujky bszn wpaj jckv"   # contraseña de aplicación
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=sync_transacciones, trigger="interval", seconds=60)
+scheduler.start()
+atexit.register(lambda: scheduler.shutdown())
 
 # ===============================
-# FUNCIÓN PARA ENVIAR CÓDIGO
+# CONFIGURACIÓN CORREO DEMO
 # ===============================
+EMAIL = "rentafacildemo@gmail.com"
+PASSWORD = "ujky bszn wpaj jckv"
+
 def enviar_codigo(correo, codigo):
     try:
         msg = MIMEText(f"Su código de verificación es: {codigo}")
@@ -27,41 +40,52 @@ def enviar_codigo(correo, codigo):
             server.login(EMAIL, PASSWORD)
             server.send_message(msg)
 
-        print("Correo enviado correctamente")
-
     except Exception as e:
         print("No se pudo enviar el correo:", e)
-        print("Código de verificación:", codigo)
+        print("Código demo:", codigo)
 
 # ===============================
-# CÁLCULO DE RENTA
+# CONEXIÓN GOOGLE SHEETS
+# ===============================
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+
+def conectar_google():
+    sa_json = json.loads(os.environ["GOOGLE_SA_JSON"])
+    creds = Credentials.from_service_account_info(sa_json, scopes=SCOPES)
+    return gspread.authorize(creds)
+
+# ===============================
+# CÁLCULO DE RENTA DESDE HISTORIAL
 # ===============================
 def calcular_renta(cedula):
-    conn = sqlite3.connect("renta.db")
-    cursor = conn.cursor()
+    gc = conectar_google()
+    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
+    historial_ws = sheet.worksheet("historial")
 
-    cursor.execute("SELECT nombre FROM usuarios WHERE cedula=?", (cedula,))
-    user = cursor.fetchone()
+    registros = historial_ws.get_all_records()
 
-    if not user:
-        return None
+    ingresos = 0
+    gastos = 0
 
-    nombre = user[0]
-
-    cursor.execute(
-        "SELECT SUM(monto) FROM transacciones WHERE cedula=? AND tipo='ingreso'",
-        (cedula,))
-    ingresos = cursor.fetchone()[0] or 0
-
-    cursor.execute(
-        "SELECT SUM(monto) FROM transacciones WHERE cedula=? AND tipo='gasto'",
-        (cedula,))
-    gastos = cursor.fetchone()[0] or 0
+    for r in registros:
+        if str(r["cedula"]).strip() == str(cedula):
+            if r["tipo"] == "ingreso":
+                ingresos += float(r["valor"])
+            elif r["tipo"] == "gasto":
+                gastos += float(r["valor"])
 
     base = ingresos - gastos
     impuesto = base * 0.10 if base > 0 else 0
 
-    conn.close()
+    # Buscar nombre en pestaña usuarios
+    usuarios_ws = sheet.worksheet("usuarios")
+    usuarios = usuarios_ws.get_all_records()
+
+    nombre = "Contribuyente"
+    for u in usuarios:
+        if str(u["cedula"]).strip() == str(cedula):
+            nombre = u["nombre"]
+            break
 
     return {
         "nombre": nombre,
@@ -84,24 +108,23 @@ def inicio():
 def consultar():
     cedula = request.form["cedula"]
 
-    conn = sqlite3.connect("renta.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT nombre FROM usuarios WHERE cedula=?", (cedula,))
-    user = cursor.fetchone()
-    conn.close()
+    # Validar que exista en Google Sheet usuarios
+    gc = conectar_google()
+    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
+    usuarios_ws = sheet.worksheet("usuarios")
+    usuarios = usuarios_ws.get_all_records()
 
-    if not user:
+    existe = any(str(u["cedula"]).strip() == cedula for u in usuarios)
+
+    if not existe:
         return "Usuario no encontrado"
 
-    # Generar código
     codigo = str(random.randint(100000, 999999))
     session["codigo"] = codigo
     session["cedula"] = cedula
 
-    correo = EMAIL  # correo demo único
-    enviar_codigo(correo, codigo)
+    enviar_codigo(EMAIL, codigo)
 
-    # Mostrar código en pantalla si el correo falla
     return render_template("verificar.html", codigo_demo=codigo)
 
 
@@ -119,10 +142,17 @@ def verificar():
 
 
 # ===============================
+# SYNC MANUAL ADMIN
+# ===============================
+@app.route("/admin/sync", methods=["POST"])
+def admin_sync():
+    nuevos = sync_transacciones()
+    return {"nuevos_registros": nuevos}
+
+
+# ===============================
 # EJECUCIÓN
 # ===============================
-import os
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
