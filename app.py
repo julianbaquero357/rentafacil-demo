@@ -1,35 +1,32 @@
-from sheets_sync import sync_transacciones
-from apscheduler.schedulers.background import BackgroundScheduler
-import atexit
-
-from flask import Flask, render_template, request, session, redirect
-import sqlite3
+from flask import Flask, render_template, request, session
+import os
+import json
 import random
+import sqlite3
+import time
+
+# Correo demo (en Render SMTP puede fallar, pero no bloqueamos flujo)
 import smtplib
 from email.mime.text import MIMEText
-import os
+
 import gspread
-import json
 from google.oauth2.service_account import Credentials
+
+from sheets_sync import sync_transacciones
 
 app = Flask(__name__)
 app.secret_key = "clave_demo_rentafacil"
 
 # ===============================
-# SCHEDULER (actualiza cada minuto)
-# ===============================
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=sync_transacciones, trigger="interval", seconds=60)
-scheduler.start()
-atexit.register(lambda: scheduler.shutdown())
-
-# ===============================
 # CONFIGURACIÓN CORREO DEMO
 # ===============================
 EMAIL = "rentafacildemo@gmail.com"
-PASSWORD = "ujky bszn wpaj jckv"
+PASSWORD = "ujky bszn wpaj jckv"  # contraseña de aplicación (demo)
 
 def enviar_codigo(correo, codigo):
+    """
+    En Render puede fallar por red. Si falla, igual seguimos y mostramos código demo en pantalla.
+    """
     try:
         msg = MIMEText(f"Su código de verificación es: {codigo}")
         msg["Subject"] = "Código de verificación - Renta Fácil"
@@ -40,12 +37,14 @@ def enviar_codigo(correo, codigo):
             server.login(EMAIL, PASSWORD)
             server.send_message(msg)
 
+        print("Correo enviado correctamente")
+
     except Exception as e:
         print("No se pudo enviar el correo:", e)
         print("Código demo:", codigo)
 
 # ===============================
-# CONEXIÓN GOOGLE SHEETS
+# GOOGLE SHEETS
 # ===============================
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
@@ -54,37 +53,47 @@ def conectar_google():
     creds = Credentials.from_service_account_info(sa_json, scopes=SCOPES)
     return gspread.authorize(creds)
 
-# ===============================
-# CÁLCULO DE RENTA DESDE HISTORIAL
-# ===============================
-def calcular_renta(cedula):
+def usuario_existe_en_sheet(cedula: str) -> bool:
+    gc = conectar_google()
+    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
+    ws = sheet.worksheet("usuarios")
+    usuarios = ws.get_all_records()
+    cedula = str(cedula).strip()
+    return any(str(u.get("cedula", "")).strip() == cedula for u in usuarios)
+
+def calcular_renta_desde_historial(cedula: str):
     gc = conectar_google()
     sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
     historial_ws = sheet.worksheet("historial")
 
     registros = historial_ws.get_all_records()
 
-    ingresos = 0
-    gastos = 0
+    ingresos = 0.0
+    gastos = 0.0
+    cedula = str(cedula).strip()
 
     for r in registros:
-        if str(r["cedula"]).strip() == str(cedula):
-            if r["tipo"] == "ingreso":
-                ingresos += float(r["valor"])
-            elif r["tipo"] == "gasto":
-                gastos += float(r["valor"])
+        if str(r.get("cedula", "")).strip() != cedula:
+            continue
+        tipo = str(r.get("tipo", "")).strip().lower()
+        valor = float(r.get("valor") or 0)
+
+        if tipo == "ingreso":
+            ingresos += valor
+        elif tipo == "gasto":
+            gastos += valor
 
     base = ingresos - gastos
-    impuesto = base * 0.10 if base > 0 else 0
+    impuesto = base * 0.10 if base > 0 else 0.0
 
-    # Buscar nombre en pestaña usuarios
+    # Nombre desde pestaña usuarios
     usuarios_ws = sheet.worksheet("usuarios")
     usuarios = usuarios_ws.get_all_records()
 
     nombre = "Contribuyente"
     for u in usuarios:
-        if str(u["cedula"]).strip() == str(cedula):
-            nombre = u["nombre"]
+        if str(u.get("cedula", "")).strip() == cedula:
+            nombre = u.get("nombre") or "Contribuyente"
             break
 
     return {
@@ -96,27 +105,64 @@ def calcular_renta(cedula):
     }
 
 # ===============================
+# AUTO-SYNC SIN SCHEDULER (GATE)
+# ===============================
+SYNC_INTERVAL_SEC = 60
+
+def maybe_sync():
+    """
+    No usamos scheduler (Render puede fallar).
+    Hacemos "auto-sync" si ya pasó 1 minuto desde la última sync.
+    Guardamos el timestamp en SQLite para que persista.
+    """
+    conn = sqlite3.connect("renta.db")
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS sync_state (
+            k TEXT PRIMARY KEY,
+            v TEXT
+        )
+    """)
+
+    cur.execute("SELECT v FROM sync_state WHERE k='last_sync_ts'")
+    row = cur.fetchone()
+    last_ts = float(row[0]) if row and row[0] else 0.0
+
+    now = time.time()
+    if now - last_ts < SYNC_INTERVAL_SEC:
+        conn.close()
+        return {"synced": False, "reason": "interval_not_reached"}
+
+    try:
+        nuevos = sync_transacciones()
+        cur.execute("INSERT OR REPLACE INTO sync_state (k, v) VALUES ('last_sync_ts', ?)", (str(now),))
+        conn.commit()
+        conn.close()
+        return {"synced": True, "nuevos": nuevos}
+    except Exception as e:
+        conn.close()
+        print("Error en sync_transacciones:", e)
+        return {"synced": False, "error": str(e)}
+
+# ===============================
 # RUTAS
 # ===============================
 
 @app.route("/")
 def inicio():
+    # Auto-sync suave cada vez que alguien entra (si ya pasó 1 min)
+    maybe_sync()
     return render_template("index.html")
-
 
 @app.route("/consultar", methods=["POST"])
 def consultar():
-    cedula = request.form["cedula"]
+    # Auto-sync suave antes de calcular (por si acaba de entrar una transacción)
+    maybe_sync()
 
-    # Validar que exista en Google Sheet usuarios
-    gc = conectar_google()
-    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
-    usuarios_ws = sheet.worksheet("usuarios")
-    usuarios = usuarios_ws.get_all_records()
+    cedula = request.form["cedula"].strip()
 
-    existe = any(str(u["cedula"]).strip() == cedula for u in usuarios)
-
-    if not existe:
+    if not usuario_existe_en_sheet(cedula):
         return "Usuario no encontrado"
 
     codigo = str(random.randint(100000, 999999))
@@ -125,30 +171,34 @@ def consultar():
 
     enviar_codigo(EMAIL, codigo)
 
+    # En demo: mostramos código (aunque correo falle)
     return render_template("verificar.html", codigo_demo=codigo)
-
 
 @app.route("/verificar", methods=["POST"])
 def verificar():
-    codigo_usuario = request.form["codigo"]
+    codigo_usuario = request.form["codigo"].strip()
 
     if codigo_usuario != session.get("codigo"):
         return "Código incorrecto"
 
     cedula = session.get("cedula")
-    resultado = calcular_renta(cedula)
+    data = calcular_renta_desde_historial(cedula)
 
-    return render_template("resultado.html", data=resultado)
+    return render_template("resultado.html", data=data)
 
-
-# ===============================
-# SYNC MANUAL ADMIN
-# ===============================
-@app.route("/admin/sync", methods=["POST"])
+# ✅ Sync manual por navegador (GET)
+@app.route("/admin/sync")
 def admin_sync():
-    nuevos = sync_transacciones()
-    return {"nuevos_registros": nuevos}
+    r = maybe_sync()
+    # además, si quieres forzar SIEMPRE, puedes llamar directo:
+    # nuevos = sync_transacciones()
+    # return f"Forzado. Nuevos: {nuevos}"
+    return f"Sync: {r}"
 
+# (Opcional) Endpoint de salud
+@app.route("/health")
+def health():
+    return {"ok": True}
 
 # ===============================
 # EJECUCIÓN
