@@ -1,43 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detalle Usuario - Renta Fácil</title>
+    <title>Detalle Contribuyente - Renta Fácil</title>
+    <style>
+        body { font-family: Arial; background:#f4f6f9; padding:40px; }
+        .card { background:white; padding:30px; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-bottom:30px; }
+        h2 { color:#002855; }
+        table { width:100%; border-collapse:collapse; }
+        th, td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
+        .btn { padding:10px 15px; background:#00509d; color:white; text-decoration:none; border-radius:5px; display:inline-block; margin-top:15px;}
+    </style>
 </head>
 <body>
-    <h1>Detalle Usuario</h1>
 
-    <p>Nombre: {{ nombre }}</p>
-    <p>Cédula: {{ cedula }}</p>
+<div class="card">
+    <h2>Datos del Contribuyente</h2>
+    <p><strong>Nombre:</strong> {{ nombre }}</p>
+    <p><strong>Cédula:</strong> {{ cedula }}</p>
+    <p><strong>Patrimonio:</strong> ${{ "{:,.0f}".format(patrimonio) }}</p>
+    <p><strong>Deudas:</strong> ${{ "{:,.0f}".format(deudas) }}</p>
+</div>
 
-    <p>Total Ingresos: ${{ ingresos }}</p>
-    <p>Total Gastos: ${{ gastos }}</p>
-    <p>Base Gravable: ${{ base }}</p>
-    <p>Impuesto Proyectado (10%): ${{ impuesto }}</p>
+<div class="card">
+    <h2>Resumen Financiero 2025</h2>
+    <p><strong>Ingresos:</strong> ${{ "{:,.0f}".format(ingresos) }}</p>
+    <p><strong>Gastos:</strong> ${{ "{:,.0f}".format(gastos) }}</p>
+    <p><strong>Base Gravable:</strong> ${{ "{:,.0f}".format(base) }}</p>
 
-    <hr>
+    <a href="/admin/pdf/{{ cedula }}" class="btn">
+        Descargar Declaración Oficial (PDF)
+    </a>
+</div>
 
-    <h2>Transacciones</h2>
-
-    <table border="1">
+<div class="card">
+    <h2>Transacciones Registradas</h2>
+    <table>
         <tr>
             <th>ID</th>
             <th>Tipo</th>
             <th>Descripción</th>
             <th>Valor</th>
-            <th>Fecha</th>
         </tr>
         {% for t in transacciones %}
         <tr>
             <td>{{ t.id_transaccion }}</td>
             <td>{{ t.tipo }}</td>
             <td>{{ t.descripcion }}</td>
-            <td>{{ t.valor }}</td>
-            <td>{{ t.fecha }}</td>
+            <td>${{ "{:,.0f}".format(t.valor|float) }}</td>
         </tr>
         {% endfor %}
     </table>
+</div>
 
-    <br>
-    <a href="/admin">Volver al Panel</a>
 </body>
 </html>
