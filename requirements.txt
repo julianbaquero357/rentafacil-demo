@@ -1,1 +1,4 @@
 flask
+gspread
+google-auth
+apscheduler
