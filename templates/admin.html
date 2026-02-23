@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Panel Administrativo - Renta Fácil</title>
+</head>
+<body>
+    <h1>Panel Administrativo</h1>
+
+    <p>Total Usuarios: {{ total_usuarios }}</p>
+    <p>Total Ingresos Globales: ${{ total_ingresos }}</p>
+    <p>Total Gastos Globales: ${{ total_gastos }}</p>
+    <p>Total Base Gravable Global: ${{ total_base }}</p>
+
+    <hr>
+
+    <h2>Buscar Usuario</h2>
+    <form method="POST" action="/admin/usuario">
+        <input type="text" name="cedula" placeholder="Ingrese cédula">
+        <button type="submit">Buscar</button>
+    </form>
+
+    <hr>
+
+    <form action="/admin/sync">
+        <button type="submit">Actualizar datos bancarios</button>
+    </form>
+</body>
+</html>
