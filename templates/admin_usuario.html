@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detalle Usuario - Renta Fácil</title>
+</head>
+<body>
+    <h1>Detalle Usuario</h1>
+
+    <p>Nombre: {{ nombre }}</p>
+    <p>Cédula: {{ cedula }}</p>
+
+    <p>Total Ingresos: ${{ ingresos }}</p>
+    <p>Total Gastos: ${{ gastos }}</p>
+    <p>Base Gravable: ${{ base }}</p>
+    <p>Impuesto Proyectado (10%): ${{ impuesto }}</p>
+
+    <hr>
+
+    <h2>Transacciones</h2>
+
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Descripción</th>
+            <th>Valor</th>
+            <th>Fecha</th>
+        </tr>
+        {% for t in transacciones %}
+        <tr>
+            <td>{{ t.id_transaccion }}</td>
+            <td>{{ t.tipo }}</td>
+            <td>{{ t.descripcion }}</td>
+            <td>{{ t.valor }}</td>
+            <td>{{ t.fecha }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <br>
+    <a href="/admin">Volver al Panel</a>
+</body>
+</html>
