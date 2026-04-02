@@ -1,12 +1,19 @@
 import os
 import resend
 
-resend.api_key = os.environ.get("RESEND_API_KEY")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+MAIL_FROM = os.environ.get("MAIL_FROM")
 
-MAIL_FROM = os.environ.get("MAIL_FROM", "notificaciones@demo.com")
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 
+def correo_habilitado():
+    return bool(RESEND_API_KEY and MAIL_FROM)
 
 def enviar_codigo_verificacion(destinatario, codigo):
+    if not correo_habilitado():
+        return None
+
     asunto = "Código de verificación - Renta Fácil"
 
     html = f"""
@@ -40,8 +47,10 @@ def enviar_codigo_verificacion(destinatario, codigo):
         "html": html
     })
 
-
 def enviar_notificacion_pdf(destinatario, nombre, cedula):
+    if not correo_habilitado():
+        return None
+
     asunto = "Declaración generada - Renta Fácil"
 
     html = f"""
