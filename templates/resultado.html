@@ -2,165 +2,270 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Resultado - Renta Fácil</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultado tributario - Renta Fácil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            margin: 0;
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(to bottom, #f4f6f8, #e9eef6);
+        :root{
+            --bg:#f4f8fb;
+            --panel:#ffffff;
+            --line:#e2e8f0;
+            --text:#0f172a;
+            --muted:#64748b;
+            --primary:#0b5ed7;
+            --primary2:#2563eb;
+            --success:#0f9f6e;
+            --shadow:0 20px 44px rgba(15,23,42,.08);
         }
 
-        .navbar {
-            background: linear-gradient(90deg, #0A2A66, #2F6FED);
-            color: white;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: 600;
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family:'Inter',sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 20%),
+                radial-gradient(circle at bottom right, rgba(16,185,129,.07), transparent 20%),
+                var(--bg);
+            color:var(--text);
         }
 
-        .container {
-            max-width: 800px;
-            margin: 50px auto;
+        .topbar{
+            background:rgba(255,255,255,.88);
+            backdrop-filter:blur(16px);
+            border-bottom:1px solid rgba(226,232,240,.9);
         }
 
-        .documento {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        .topbar-inner{
+            max-width:1080px;
+            margin:0 auto;
+            padding:16px 24px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
         }
 
-        .header-doc {
-            text-align: center;
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+        .brand{
+            display:flex;
+            align-items:center;
+            gap:14px;
         }
 
-        .header-doc h1 {
-            color: #0A2A66;
-            margin: 5px 0;
+        .brand-mark{
+            width:42px;
+            height:42px;
+            border-radius:14px;
+            display:grid;
+            place-items:center;
+            color:#fff;
+            font-weight:800;
+            background:linear-gradient(135deg,var(--primary),var(--primary2));
         }
 
-        .section {
-            margin-bottom: 25px;
+        .brand h1{
+            margin:0;
+            font-size:18px;
         }
 
-        .section h3 {
-            color: #2F6FED;
-            margin-bottom: 10px;
+        .brand p{
+            margin:2px 0 0;
+            color:var(--muted);
+            font-size:12px;
         }
 
-        .fila {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
+        .container{
+            max-width:1080px;
+            margin:0 auto;
+            padding:28px 24px 40px;
         }
 
-        .total {
-            background: #eef2f7;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            text-align: center;
+        .hero{
+            background:linear-gradient(135deg,#0b5ed7,#2563eb);
+            color:#fff;
+            border-radius:28px;
+            padding:30px;
+            box-shadow:0 26px 54px rgba(37,99,235,.22);
+            margin-bottom:24px;
+            animation:fadeUp .7s ease both;
         }
 
-        .total h2 {
-            color: #0A2A66;
-            margin: 10px 0;
+        .hero h2{
+            margin:0 0 8px;
+            font-size:34px;
+            letter-spacing:-1.2px;
         }
 
-        .estado {
-            font-size: 18px;
-            font-weight: 600;
-            color: #00A859;
+        .hero p{
+            margin:0;
+            color:rgba(255,255,255,.88);
+            line-height:1.7;
+            max-width:780px;
         }
 
-        .footer-doc {
-            text-align: center;
-            margin-top: 40px;
-            font-size: 13px;
-            color: gray;
+        .grid{
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:18px;
+            margin-bottom:24px;
         }
 
-        .boton-volver {
-            display: block;
-            margin: 30px auto;
-            text-align: center;
+        .card{
+            background:rgba(255,255,255,.96);
+            border:1px solid rgba(226,232,240,.88);
+            border-radius:22px;
+            padding:24px;
+            box-shadow:var(--shadow);
+            animation:fadeUp .8s ease both;
         }
 
-        .boton-volver a {
-            background: linear-gradient(135deg, #2F6FED, #4a85ff);
-            color: white;
-            padding: 12px 25px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 500;
+        .small{
+            color:#64748b;
+            font-size:12px;
+            text-transform:uppercase;
+            font-weight:700;
+            letter-spacing:.45px;
+        }
+
+        .big{
+            margin-top:10px;
+            font-size:28px;
+            font-weight:800;
+            letter-spacing:-1px;
+        }
+
+        .summary{
+            background:rgba(255,255,255,.96);
+            border:1px solid rgba(226,232,240,.88);
+            border-radius:24px;
+            padding:26px;
+            box-shadow:var(--shadow);
+        }
+
+        .summary h3{
+            margin:0 0 8px;
+            font-size:22px;
+            letter-spacing:-.6px;
+        }
+
+        .summary p{
+            margin:0 0 18px;
+            color:var(--muted);
+            line-height:1.7;
+        }
+
+        .list{
+            display:grid;
+            gap:12px;
+        }
+
+        .item{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:14px 16px;
+            border:1px solid var(--line);
+            border-radius:16px;
+            background:#fbfdff;
+        }
+
+        .btn{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            margin-top:20px;
+            height:48px;
+            padding:0 18px;
+            border-radius:14px;
+            text-decoration:none;
+            font-weight:800;
+            font-size:14px;
+            color:#fff;
+            background:linear-gradient(135deg,var(--primary),var(--primary2));
+        }
+
+        @keyframes fadeUp{
+            from{opacity:0; transform:translateY(16px)}
+            to{opacity:1; transform:translateY(0)}
+        }
+
+        @media (max-width: 920px){
+            .grid{grid-template-columns:repeat(2,1fr)}
+        }
+
+        @media (max-width: 620px){
+            .grid{grid-template-columns:1fr}
+            .hero h2{font-size:28px}
         }
     </style>
 </head>
-
 <body>
-
-<div class="navbar">
-    Renta Fácil — Sistema Nacional de Declaración Automática
-</div>
-
-<div class="container">
-    <div class="documento">
-
-        <div class="header-doc">
-            <h1>Certificado de Declaración Automática</h1>
-            <p>Sistema Nacional Renta Fácil</p>
-        </div>
-
-        <div class="section">
-            <h3>Datos del ciudadano</h3>
-            <div class="fila">
-                <span>Nombre:</span>
-                <span>{{ data.nombre }}</span>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">RF</div>
+                <div>
+                    <h1>Renta Fácil</h1>
+                    <p>Resultado de consulta tributaria</p>
+                </div>
             </div>
         </div>
+    </header>
 
-        <div class="section">
-            <h3>Resumen tributario</h3>
-            <div class="fila">
-                <span>Ingresos anuales:</span>
-                <span>${{ data.ingresos }}</span>
+    <main class="container">
+        <section class="hero">
+            <h2>Consulta realizada correctamente</h2>
+            <p>
+                El sistema ha consolidado la información tributaria demostrativa del contribuyente
+                y generado una estimación automática con base en los movimientos registrados.
+            </p>
+        </section>
+
+        <section class="grid">
+            <div class="card">
+                <div class="small">Contribuyente</div>
+                <div class="big">{{ data.nombre }}</div>
             </div>
-            <div class="fila">
-                <span>Gastos deducibles:</span>
-                <span>${{ data.gastos }}</span>
+            <div class="card">
+                <div class="small">Ingresos</div>
+                <div class="big">${{ "{:,.0f}".format(data.ingresos) }}</div>
             </div>
-            <div class="fila">
-                <span>Base gravable:</span>
-                <span>${{ data.base }}</span>
+            <div class="card">
+                <div class="small">Gastos</div>
+                <div class="big">${{ "{:,.0f}".format(data.gastos) }}</div>
             </div>
-        </div>
-
-        <div class="total">
-            <h2>Impuesto calculado</h2>
-            <h1>${{ data.impuesto }}</h1>
-            <div class="estado">
-                Declaración generada automáticamente
+            <div class="card">
+                <div class="small">Base gravable</div>
+                <div class="big">${{ "{:,.0f}".format(data.base) }}</div>
             </div>
-        </div>
+        </section>
 
-        <div class="footer-doc">
-            Documento generado por el sistema Renta Fácil.  
-            Plataforma demostrativa para modernización tributaria.
-        </div>
+        <section class="summary">
+            <h3>Resumen de la validación</h3>
+            <p>
+                Este resultado corresponde a una simulación demostrativa del sistema
+                Renta Fácil, construida a partir de la información disponible en el entorno de prueba.
+            </p>
 
-    </div>
+            <div class="list">
+                <div class="item">
+                    <span>Nombre del contribuyente</span>
+                    <strong>{{ data.nombre }}</strong>
+                </div>
+                <div class="item">
+                    <span>Total ingresos registrados</span>
+                    <strong>${{ "{:,.0f}".format(data.ingresos) }}</strong>
+                </div>
+                <div class="item">
+                    <span>Total gastos registrados</span>
+                    <strong>${{ "{:,.0f}".format(data.gastos) }}</strong>
+                </div>
+                <div class="item">
+                    <span>Base gravable estimada</span>
+                    <strong>${{ "{:,.0f}".format(data.base) }}</strong>
+                </div>
+            </div>
 
-    <div class="boton-volver">
-        <a href="/">Volver al inicio</a>
-    </div>
-</div>
-
+            <a class="btn" href="/">Volver al portal</a>
+        </section>
+    </main>
 </body>
 </html>
