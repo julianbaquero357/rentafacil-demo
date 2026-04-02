@@ -5,3 +5,4 @@ apscheduler
 reportlab
 qrcode
 Pillow
+resend
