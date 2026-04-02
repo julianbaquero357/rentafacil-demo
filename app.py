@@ -5,39 +5,21 @@ import json
 import random
 import sqlite3
 import time
-import smtplib
 import io
-from email.mime.text import MIMEText
 
 import gspread
 from google.oauth2.service_account import Credentials
 
 from sheets_sync import sync_transacciones
 from pdf_generator import generar_pdf_declaracion
+from email_service import (
+    enviar_codigo_verificacion,
+    enviar_notificacion_pdf,
+    correo_habilitado
+)
 
 app = Flask(__name__)
 app.secret_key = "clave_demo_rentafacil"
-
-# =====================================================
-# CONFIGURACIÓN CORREO DEMO
-# =====================================================
-EMAIL = "rentafacildemo@gmail.com"
-PASSWORD = "ujky bszn wpaj jckv"
-
-def enviar_codigo(correo, codigo):
-    try:
-        msg = MIMEText(f"Su código de verificación es: {codigo}")
-        msg["Subject"] = "Código de verificación - Renta Fácil"
-        msg["From"] = EMAIL
-        msg["To"] = correo
-
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
-            server.login(EMAIL, PASSWORD)
-            server.send_message(msg)
-
-    except Exception as e:
-        print("No se pudo enviar el correo:", e)
-        print("Código demo:", codigo)
 
 # =====================================================
 # GOOGLE SHEETS
@@ -139,27 +121,43 @@ def usuario_existe(cedula):
     return any(normalizar_cedula(u.get("cedula")) == cedula for u in usuarios)
 
 # =====================================================
+# OBTENER DATOS DE USUARIO
+# =====================================================
+def obtener_usuario_por_cedula(cedula):
+    gc = conectar_google()
+    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
+    ws = sheet.worksheet("usuarios")
+    usuarios = ws.get_all_records()
+
+    cedula = normalizar_cedula(cedula)
+
+    for u in usuarios:
+        if normalizar_cedula(u.get("cedula")) == cedula:
+            return {
+                "cedula": cedula,
+                "nombre": u.get("nombre", "Contribuyente"),
+                "correo": u.get("correo") or "no-disponible@demo.co",
+                "patrimonio": float(u.get("patrimonio") or 0),
+                "deudas": float(u.get("deudas") or 0)
+            }
+
+    return None
+
+# =====================================================
 # CÁLCULO DE RENTA
 # =====================================================
 def calcular_renta(cedula):
     gc = conectar_google()
     sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
     historial_ws = sheet.worksheet("historial")
-    usuarios_ws = sheet.worksheet("usuarios")
 
     historial = historial_ws.get_all_records()
-    usuarios = usuarios_ws.get_all_records()
+    usuario = obtener_usuario_por_cedula(cedula)
 
     cedula = normalizar_cedula(cedula)
 
     ingresos = 0.0
     gastos = 0.0
-    nombre = "Contribuyente"
-
-    for u in usuarios:
-        if normalizar_cedula(u.get("cedula")) == cedula:
-            nombre = u.get("nombre", "Contribuyente")
-            break
 
     for r in historial:
         if normalizar_cedula(r.get("cedula")) == cedula:
@@ -174,7 +172,10 @@ def calcular_renta(cedula):
     base = ingresos - gastos
 
     return {
-        "nombre": nombre,
+        "nombre": usuario["nombre"] if usuario else "Contribuyente",
+        "correo": usuario["correo"] if usuario else "no-disponible@demo.co",
+        "patrimonio": usuario["patrimonio"] if usuario else 0,
+        "deudas": usuario["deudas"] if usuario else 0,
         "ingresos": ingresos,
         "gastos": gastos,
         "base": base
@@ -188,6 +189,10 @@ def inicio():
     maybe_sync()
     return render_template("index.html")
 
+@app.route("/acerca")
+def acerca():
+    return render_template("about.html")
+
 @app.route("/consultar", methods=["POST"])
 def consultar():
     maybe_sync()
@@ -198,12 +203,21 @@ def consultar():
     if not usuario_existe(cedula):
         return "Usuario no encontrado"
 
+    usuario = obtener_usuario_por_cedula(cedula)
+    correo = usuario["correo"] if usuario else "no-disponible@demo.co"
+
     codigo = str(random.randint(100000, 999999))
     session["codigo"] = codigo
     session["cedula"] = cedula
 
-    enviar_codigo(EMAIL, codigo)
+    # Si correo real está habilitado, intenta enviar
+    if correo_habilitado():
+        try:
+            enviar_codigo_verificacion(correo, codigo)
+        except Exception as e:
+            print("Error enviando verificación con Resend:", e)
 
+    # En demo, siempre mostramos el código también
     return render_template("verificar.html", codigo_demo=codigo)
 
 @app.route("/verificar", methods=["POST"])
@@ -266,24 +280,13 @@ def admin_usuario():
 
     gc = conectar_google()
     sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
-    usuarios_ws = sheet.worksheet("usuarios")
     historial_ws = sheet.worksheet("historial")
-
-    usuarios = usuarios_ws.get_all_records()
     historial = historial_ws.get_all_records()
 
-    nombre = "No encontrado"
-    patrimonio = 0.0
-    deudas = 0.0
-    correo = "no-disponible@demo.co"
+    usuario = obtener_usuario_por_cedula(cedula)
 
-    for u in usuarios:
-        if normalizar_cedula(u.get("cedula")) == cedula:
-            nombre = u.get("nombre", "Contribuyente")
-            patrimonio = float(u.get("patrimonio") or 0)
-            deudas = float(u.get("deudas") or 0)
-            correo = u.get("correo") or "no-disponible@demo.co"
-            break
+    if not usuario:
+        return "Usuario no encontrado"
 
     transacciones = []
     ingresos = 0.0
@@ -310,14 +313,14 @@ def admin_usuario():
 
     return render_template(
         "admin_usuario.html",
-        nombre=nombre,
-        cedula=cedula,
-        correo=correo,
+        nombre=usuario["nombre"],
+        cedula=usuario["cedula"],
+        correo=usuario["correo"],
         ingresos=ingresos,
         gastos=gastos,
         base=base,
-        patrimonio=patrimonio,
-        deudas=deudas,
+        patrimonio=usuario["patrimonio"],
+        deudas=usuario["deudas"],
         transacciones=transacciones
     )
 
@@ -331,19 +334,7 @@ def admin_pdf(cedula):
 
     gc = conectar_google()
     sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
-    usuarios = sheet.worksheet("usuarios").get_all_records()
     historial = sheet.worksheet("historial").get_all_records()
-
-    patrimonio = 0.0
-    deudas = 0.0
-    correo = "no-disponible@demo.co"
-
-    for u in usuarios:
-        if normalizar_cedula(u.get("cedula")) == cedula:
-            patrimonio = float(u.get("patrimonio") or 0)
-            deudas = float(u.get("deudas") or 0)
-            correo = u.get("correo") or "no-disponible@demo.co"
-            break
 
     transacciones = []
     for r in historial:
@@ -358,17 +349,24 @@ def admin_pdf(cedula):
     data_pdf = {
         "cedula": cedula,
         "nombre": resultado["nombre"],
-        "correo": correo,
+        "correo": resultado["correo"],
         "ingresos": resultado["ingresos"],
         "gastos": resultado["gastos"],
         "base": resultado["base"],
-        "patrimonio": patrimonio,
-        "deudas": deudas,
+        "patrimonio": resultado["patrimonio"],
+        "deudas": resultado["deudas"],
         "transacciones": transacciones
     }
 
     pdf_bytes = generar_pdf_declaracion(data_pdf)
     filename = f"Declaracion_RentaFacil_210_DEMO_{cedula}_AG2025.pdf"
+
+    # Si correo real está habilitado, manda notificación
+    if correo_habilitado():
+        try:
+            enviar_notificacion_pdf(resultado["correo"], resultado["nombre"], cedula)
+        except Exception as e:
+            print("Error enviando notificación PDF:", e)
 
     return send_file(
         io.BytesIO(pdf_bytes),
