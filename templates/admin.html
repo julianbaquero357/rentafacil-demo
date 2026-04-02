@@ -1,219 +1,503 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Panel Administrativo - Renta Fácil</title>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <title>Panel Ejecutivo - Renta Fácil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background-color: #f4f6f9;
+        :root{
+            --bg:#f3f7fb;
+            --panel:#ffffff;
+            --line:#e2e8f0;
+            --text:#0f172a;
+            --muted:#64748b;
+            --primary:#0b5ed7;
+            --primary2:#2563eb;
+            --success:#0f9f6e;
+            --danger:#dc2626;
+            --card-shadow:0 18px 44px rgba(15,23,42,.08);
         }
 
-        header {
-            background: linear-gradient(90deg, #002855, #00509d);
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family:'Inter',sans-serif;
+            color:var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 22%),
+                radial-gradient(circle at bottom right, rgba(16,185,129,.07), transparent 20%),
+                var(--bg);
         }
 
-        header h1 {
-            margin: 0;
-            font-size: 22px;
+        .topbar{
+            position:sticky;
+            top:0;
+            z-index:100;
+            background:rgba(255,255,255,.88);
+            backdrop-filter:blur(16px);
+            border-bottom:1px solid rgba(226,232,240,.9);
         }
 
-        .logout {
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-            background: #c1121f;
-            padding: 8px 14px;
-            border-radius: 5px;
+        .topbar-inner{
+            max-width:1320px;
+            margin:0 auto;
+            padding:16px 24px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:16px;
         }
 
-        .container {
-            padding: 40px;
+        .brand{
+            display:flex;
+            align-items:center;
+            gap:14px;
         }
 
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+        .brand-mark{
+            width:44px;
+            height:44px;
+            border-radius:14px;
+            display:grid;
+            place-items:center;
+            color:#fff;
+            font-weight:800;
+            background:linear-gradient(135deg,var(--primary),var(--primary2));
+            box-shadow:0 14px 28px rgba(37,99,235,.22);
         }
 
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0px 5px 20px rgba(0,0,0,0.08);
-            transition: 0.3s;
+        .brand h1{
+            margin:0;
+            font-size:18px;
+            letter-spacing:-.5px;
         }
 
-        .card:hover {
-            transform: translateY(-4px);
+        .brand p{
+            margin:2px 0 0;
+            color:var(--muted);
+            font-size:12px;
         }
 
-        .card h3 {
-            margin: 0 0 10px 0;
-            color: #002855;
+        .top-actions{
+            display:flex;
+            align-items:center;
+            gap:10px;
         }
 
-        .card p {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 0;
+        .ghost-btn,.danger-btn,.primary-btn,.success-btn{
+            border:none;
+            border-radius:14px;
+            height:44px;
+            padding:0 18px;
+            cursor:pointer;
+            font-weight:700;
+            font-size:14px;
+            transition:.25s ease;
+            text-decoration:none;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
         }
 
-        .search-box {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0px 5px 20px rgba(0,0,0,0.08);
-            margin-bottom: 40px;
+        .primary-btn{
+            color:#fff;
+            background:linear-gradient(135deg,var(--primary),var(--primary2));
+            box-shadow:0 12px 24px rgba(37,99,235,.18);
         }
 
-        .search-box h2 {
-            margin-top: 0;
-            color: #002855;
+        .primary-btn:hover,.success-btn:hover,.danger-btn:hover,.ghost-btn:hover{
+            transform:translateY(-2px);
         }
 
-        input[type="text"] {
-            width: 300px;
-            padding: 10px;
-            font-size: 15px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            margin-right: 10px;
+        .success-btn{
+            color:#fff;
+            background:linear-gradient(135deg,#0f9f6e,#10b981);
+            box-shadow:0 12px 24px rgba(16,185,129,.18);
         }
 
-        button {
-            padding: 10px 18px;
-            font-size: 15px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
+        .danger-btn{
+            color:#fff;
+            background:linear-gradient(135deg,#dc2626,#ef4444);
         }
 
-        .btn-primary {
-            background-color: #00509d;
-            color: white;
+        .ghost-btn{
+            background:#fff;
+            border:1px solid var(--line);
+            color:#0f172a;
         }
 
-        .btn-sync {
-            background-color: #2a9d8f;
-            color: white;
+        .container{
+            max-width:1320px;
+            margin:0 auto;
+            padding:30px 24px 44px;
         }
 
-        .chart-container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0px 5px 20px rgba(0,0,0,0.08);
+        .hero{
+            display:grid;
+            grid-template-columns:1.25fr .75fr;
+            gap:24px;
+            align-items:stretch;
+            margin-bottom:24px;
         }
 
-        footer {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-size: 13px;
+        .hero-card,.side-card,.panel,.chart-card,.search-card{
+            background:rgba(255,255,255,.94);
+            border:1px solid rgba(226,232,240,.85);
+            border-radius:24px;
+            box-shadow:var(--card-shadow);
+        }
+
+        .hero-card{
+            padding:28px;
+            position:relative;
+            overflow:hidden;
+        }
+
+        .hero-card::after{
+            content:"";
+            position:absolute;
+            right:-80px;
+            top:-80px;
+            width:220px;
+            height:220px;
+            border-radius:50%;
+            background:radial-gradient(circle, rgba(37,99,235,.15), transparent 70%);
+        }
+
+        .hero-badge{
+            display:inline-flex;
+            align-items:center;
+            gap:10px;
+            padding:10px 14px;
+            border-radius:999px;
+            background:#eff6ff;
+            color:#1d4ed8;
+            font-size:13px;
+            font-weight:700;
+            margin-bottom:18px;
+        }
+
+        .hero-card h2{
+            margin:0 0 10px;
+            font-size:32px;
+            letter-spacing:-1.2px;
+        }
+
+        .hero-card p{
+            margin:0;
+            color:var(--muted);
+            line-height:1.7;
+            max-width:720px;
+        }
+
+        .side-card{
+            padding:24px;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            gap:16px;
+        }
+
+        .mini-stat{
+            padding:18px;
+            border-radius:18px;
+            background:linear-gradient(135deg,#f8fbff,#eef4ff);
+            border:1px solid #dbeafe;
+        }
+
+        .mini-stat .label{
+            color:#475569;
+            font-size:12px;
+            font-weight:700;
+            text-transform:uppercase;
+            letter-spacing:.5px;
+        }
+
+        .mini-stat .value{
+            margin-top:6px;
+            font-size:28px;
+            font-weight:800;
+            letter-spacing:-1px;
+        }
+
+        .kpi-grid{
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:18px;
+            margin-bottom:24px;
+        }
+
+        .kpi{
+            padding:24px;
+            border-radius:22px;
+            background:rgba(255,255,255,.95);
+            border:1px solid rgba(226,232,240,.85);
+            box-shadow:var(--card-shadow);
+            position:relative;
+            overflow:hidden;
+            animation:fadeUp .55s ease both;
+        }
+
+        .kpi::before{
+            content:"";
+            position:absolute;
+            inset:0 auto auto 0;
+            width:100%;
+            height:4px;
+            background:linear-gradient(90deg,var(--primary),#60a5fa);
+        }
+
+        .kpi:nth-child(2)::before{background:linear-gradient(90deg,#0f9f6e,#34d399)}
+        .kpi:nth-child(3)::before{background:linear-gradient(90deg,#dc2626,#f87171)}
+        .kpi:nth-child(4)::before{background:linear-gradient(90deg,#7c3aed,#a78bfa)}
+
+        .kpi .small{
+            color:#64748b;
+            font-size:12px;
+            font-weight:700;
+            text-transform:uppercase;
+            letter-spacing:.45px;
+        }
+
+        .kpi .big{
+            margin-top:10px;
+            font-size:30px;
+            font-weight:800;
+            letter-spacing:-1.1px;
+        }
+
+        .content-grid{
+            display:grid;
+            grid-template-columns: .95fr 1.05fr;
+            gap:24px;
+        }
+
+        .search-card{
+            padding:24px;
+            animation:fadeUp .65s ease both;
+        }
+
+        .search-card h3,.chart-card h3{
+            margin:0 0 8px;
+            font-size:20px;
+            letter-spacing:-.6px;
+        }
+
+        .muted{
+            color:var(--muted);
+            font-size:14px;
+            line-height:1.7;
+        }
+
+        .search-form{
+            display:flex;
+            gap:12px;
+            margin-top:18px;
+            flex-wrap:wrap;
+        }
+
+        .input{
+            flex:1 1 280px;
+            min-width:260px;
+            height:50px;
+            border-radius:16px;
+            border:1px solid var(--line);
+            background:#fff;
+            padding:0 16px;
+            font-size:15px;
+            outline:none;
+            transition:.25s ease;
+        }
+
+        .input:focus{
+            border-color:#60a5fa;
+            box-shadow:0 0 0 5px rgba(59,130,246,.14);
+        }
+
+        .quick-actions{
+            margin-top:18px;
+            display:flex;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+
+        .chart-card{
+            padding:24px;
+            animation:fadeUp .75s ease both;
+        }
+
+        .chart-wrap{
+            height:360px;
+            margin-top:14px;
+        }
+
+        .footer{
+            text-align:center;
+            color:#64748b;
+            font-size:12px;
+            padding:10px 0 30px;
+        }
+
+        @keyframes fadeUp{
+            from{opacity:0; transform:translateY(16px)}
+            to{opacity:1; transform:translateY(0)}
+        }
+
+        @media (max-width: 1100px){
+            .hero,.content-grid{grid-template-columns:1fr}
+            .kpi-grid{grid-template-columns:repeat(2,1fr)}
+        }
+
+        @media (max-width: 680px){
+            .kpi-grid{grid-template-columns:1fr}
+            .topbar-inner{padding:14px 16px}
+            .container{padding:20px 16px 34px}
+            .hero-card h2{font-size:26px}
+            .brand h1{font-size:16px}
         }
     </style>
 </head>
-
 <body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">RF</div>
+                <div>
+                    <h1>Panel Ejecutivo Nacional</h1>
+                    <p>Renta Fácil • Monitoreo tributario automatizado</p>
+                </div>
+            </div>
 
-<header>
-    <h1>RENTA FÁCIL - PANEL EJECUTIVO NACIONAL</h1>
-    <a href="/admin/logout" class="logout">Cerrar sesión</a>
-</header>
-
-<div class="container">
-
-    <div class="cards">
-        <div class="card">
-            <h3>Total Usuarios</h3>
-            <p>{{ total_usuarios }}</p>
+            <div class="top-actions">
+                <a class="ghost-btn" href="/">Ir al portal</a>
+                <a class="danger-btn" href="/admin/logout">Cerrar sesión</a>
+            </div>
         </div>
+    </header>
 
-        <div class="card">
-            <h3>Ingresos Totales</h3>
-            <p>${{ "{:,.0f}".format(total_ingresos) }}</p>
-        </div>
+    <main class="container">
+        <section class="hero">
+            <div class="hero-card">
+                <div class="hero-badge">Sistema activo • demostración funcional</div>
+                <h2>Centro de control tributario automatizado</h2>
+                <p>
+                    Consola administrativa para validación de usuarios, consolidación de movimientos,
+                    actualización de fuentes bancarias y proyección de recaudo estimado con base en
+                    transacciones procesadas por Renta Fácil.
+                </p>
+            </div>
 
-        <div class="card">
-            <h3>Gastos Totales</h3>
-            <p>${{ "{:,.0f}".format(total_gastos) }}</p>
-        </div>
+            <div class="side-card">
+                <div class="mini-stat">
+                    <div class="label">Estado de sincronización</div>
+                    <div class="value">Operativo</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="label">Año gravable en visualización</div>
+                    <div class="value">2025</div>
+                </div>
+            </div>
+        </section>
 
-        <div class="card">
-            <h3>Recaudo Estimado (10%)</h3>
-            <p>${{ "{:,.0f}".format(total_base * 0.10) }}</p>
-        </div>
+        <section class="kpi-grid">
+            <div class="kpi">
+                <div class="small">Total de usuarios</div>
+                <div class="big">{{ total_usuarios }}</div>
+            </div>
+            <div class="kpi">
+                <div class="small">Ingresos globales</div>
+                <div class="big">${{ "{:,.0f}".format(total_ingresos) }}</div>
+            </div>
+            <div class="kpi">
+                <div class="small">Gastos globales</div>
+                <div class="big">${{ "{:,.0f}".format(total_gastos) }}</div>
+            </div>
+            <div class="kpi">
+                <div class="small">Recaudo estimado</div>
+                <div class="big">${{ "{:,.0f}".format(total_base * 0.10) }}</div>
+            </div>
+        </section>
+
+        <section class="content-grid">
+            <div class="search-card">
+                <h3>Consulta de contribuyente</h3>
+                <p class="muted">
+                    Localice un usuario por número de identificación para visualizar su comportamiento
+                    financiero acumulado, base gravable, transacciones procesadas y generación de
+                    declaración tributaria demostrativa.
+                </p>
+
+                <form method="POST" action="/admin/usuario" class="search-form">
+                    <input class="input" type="text" name="cedula" placeholder="Ingrese número de cédula" required>
+                    <button class="primary-btn" type="submit">Consultar usuario</button>
+                </form>
+
+                <div class="quick-actions">
+                    <a class="success-btn" href="/admin/sync">Actualizar datos bancarios</a>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Comportamiento financiero global</h3>
+                <p class="muted">
+                    Relación consolidada entre ingresos, gastos y base gravable derivada de los movimientos
+                    procesados por el sistema.
+                </p>
+
+                <div class="chart-wrap">
+                    <canvas id="graficaGlobal"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="footer">
+        Plataforma de gestión tributaria automatizada • Renta Fácil © 2026
     </div>
 
-    <div class="search-box">
-        <h2>Buscar Contribuyente</h2>
+    <script>
+        const ctx = document.getElementById('graficaGlobal').getContext('2d');
 
-        <form method="POST" action="/admin/usuario">
-            <input type="text" name="cedula" placeholder="Ingrese número de cédula" required>
-            <button type="submit" class="btn-primary">Consultar</button>
-        </form>
-
-        <br><br>
-
-        <form action="/admin/sync">
-            <button type="submit" class="btn-sync">Actualizar Datos Bancarios</button>
-        </form>
-    </div>
-
-    <div class="chart-container">
-        <h2 style="color:#002855;">Comportamiento Global</h2>
-        <canvas id="grafica"></canvas>
-    </div>
-
-</div>
-
-<footer>
-    Plataforma de Gestión Tributaria Automatizada - Renta Fácil © 2026
-</footer>
-
-<script>
-    const ctx = document.getElementById('grafica').getContext('2d');
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Ingresos', 'Gastos', 'Base Gravable'],
-            datasets: [{
-                label: 'Resumen Financiero',
-                data: [
-                    {{ total_ingresos }},
-                    {{ total_gastos }},
-                    {{ total_base }}
-                ],
-                backgroundColor: [
-                    '#2a9d8f',
-                    '#e63946',
-                    '#00509d'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            animation: {
-                duration: 1200
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Ingresos', 'Gastos', 'Base gravable'],
+                datasets: [{
+                    label: 'Resumen financiero',
+                    data: [{{ total_ingresos }}, {{ total_gastos }}, {{ total_base }}],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.82)',
+                        'rgba(239, 68, 68, 0.82)',
+                        'rgba(37, 99, 235, 0.82)'
+                    ],
+                    borderRadius: 12,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                animation: {
+                    duration: 1400,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#334155', font: { weight: 600 } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(148,163,184,.22)' },
+                        ticks: { color: '#64748b' }
+                    }
+                }
             }
-        }
-    });
-</script>
-
+        });
+    </script>
 </body>
 </html>
