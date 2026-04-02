@@ -58,15 +58,11 @@ def normalizar_cedula(valor):
         return str(valor).strip()
 
 # =====================================================
-# AUTO SYNC CONTROLADO (sin scheduler)
+# AUTO SYNC CONTROLADO
 # =====================================================
 SYNC_INTERVAL_SEC = 60
 
 def maybe_sync():
-    """
-    Ejecuta sync_transacciones() como máximo 1 vez por minuto.
-    Guarda last_sync_ts en SQLite local.
-    """
     conn = sqlite3.connect("renta.db")
     cur = conn.cursor()
 
@@ -87,8 +83,11 @@ def maybe_sync():
         return {"synced": False}
 
     try:
-        nuevos = sync_transacciones()  # tu función en sheets_sync.py
-        cur.execute("INSERT OR REPLACE INTO sync_state (k, v) VALUES ('last_sync_ts', ?)", (str(now),))
+        nuevos = sync_transacciones()
+        cur.execute(
+            "INSERT OR REPLACE INTO sync_state (k, v) VALUES ('last_sync_ts', ?)",
+            (str(now),)
+        )
         conn.commit()
         conn.close()
         return {"synced": True, "nuevos": nuevos}
@@ -128,7 +127,7 @@ def admin_logout():
     return redirect("/admin/login")
 
 # =====================================================
-# VALIDAR USUARIO EXISTE (Sheet usuarios)
+# VALIDAR USUARIO
 # =====================================================
 def usuario_existe(cedula):
     gc = conectar_google()
@@ -140,7 +139,7 @@ def usuario_existe(cedula):
     return any(normalizar_cedula(u.get("cedula")) == cedula for u in usuarios)
 
 # =====================================================
-# CÁLCULO (desde Sheet historial)
+# CÁLCULO DE RENTA
 # =====================================================
 def calcular_renta(cedula):
     gc = conectar_google()
@@ -203,14 +202,13 @@ def consultar():
     session["codigo"] = codigo
     session["cedula"] = cedula
 
-    # Correo demo único
     enviar_codigo(EMAIL, codigo)
 
     return render_template("verificar.html", codigo_demo=codigo)
 
 @app.route("/verificar", methods=["POST"])
 def verificar():
-    codigo_usuario = request.form.get("codigo", "")
+    codigo_usuario = request.form.get("codigo", "").strip()
 
     if codigo_usuario != session.get("codigo"):
         return "Código incorrecto"
@@ -221,7 +219,6 @@ def verificar():
 
     resultado = calcular_renta(cedula)
 
-    # Tu resultado.html debe mostrar data: nombre, ingresos, gastos, base, etc.
     return render_template("resultado.html", data=resultado)
 
 # =====================================================
@@ -278,12 +275,14 @@ def admin_usuario():
     nombre = "No encontrado"
     patrimonio = 0.0
     deudas = 0.0
+    correo = "no-disponible@demo.co"
 
     for u in usuarios:
         if normalizar_cedula(u.get("cedula")) == cedula:
             nombre = u.get("nombre", "Contribuyente")
             patrimonio = float(u.get("patrimonio") or 0)
             deudas = float(u.get("deudas") or 0)
+            correo = u.get("correo") or "no-disponible@demo.co"
             break
 
     transacciones = []
@@ -295,7 +294,6 @@ def admin_usuario():
             tipo = (r.get("tipo") or "").strip().lower()
             valor = float(r.get("valor") or 0)
 
-            # Aseguramos claves estándar para PDF y HTML
             transacciones.append({
                 "id_transaccion": r.get("id_transaccion") or r.get("id") or "",
                 "tipo": tipo,
@@ -314,6 +312,7 @@ def admin_usuario():
         "admin_usuario.html",
         nombre=nombre,
         cedula=cedula,
+        correo=correo,
         ingresos=ingresos,
         gastos=gastos,
         base=base,
@@ -337,10 +336,13 @@ def admin_pdf(cedula):
 
     patrimonio = 0.0
     deudas = 0.0
+    correo = "no-disponible@demo.co"
+
     for u in usuarios:
         if normalizar_cedula(u.get("cedula")) == cedula:
             patrimonio = float(u.get("patrimonio") or 0)
             deudas = float(u.get("deudas") or 0)
+            correo = u.get("correo") or "no-disponible@demo.co"
             break
 
     transacciones = []
@@ -356,6 +358,7 @@ def admin_pdf(cedula):
     data_pdf = {
         "cedula": cedula,
         "nombre": resultado["nombre"],
+        "correo": correo,
         "ingresos": resultado["ingresos"],
         "gastos": resultado["gastos"],
         "base": resultado["base"],
@@ -380,6 +383,9 @@ def admin_sync():
     res = maybe_sync()
     return f"Sync: {res}"
 
+# =====================================================
+# HEALTH
+# =====================================================
 @app.route("/health")
 def health():
     return {"ok": True}
