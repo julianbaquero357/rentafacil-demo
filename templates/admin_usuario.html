@@ -1,56 +1,562 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Detalle Contribuyente - Renta Fácil</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del contribuyente - Renta Fácil</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial; background:#f4f6f9; padding:40px; }
-        .card { background:white; padding:30px; border-radius:10px; box-shadow:0 5px 15px rgba(0,0,0,0.1); margin-bottom:30px; }
-        h2 { color:#002855; }
-        table { width:100%; border-collapse:collapse; }
-        th, td { padding:10px; border-bottom:1px solid #ddd; text-align:left; }
-        .btn { padding:10px 15px; background:#00509d; color:white; text-decoration:none; border-radius:5px; display:inline-block; margin-top:15px;}
+        :root{
+            --bg:#f3f7fb;
+            --panel:#ffffff;
+            --line:#e2e8f0;
+            --text:#0f172a;
+            --muted:#64748b;
+            --primary:#0b5ed7;
+            --primary2:#2563eb;
+            --success:#0f9f6e;
+            --danger:#dc2626;
+            --shadow:0 18px 44px rgba(15,23,42,.08);
+        }
+
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family:'Inter',sans-serif;
+            color:var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 22%),
+                radial-gradient(circle at bottom right, rgba(16,185,129,.07), transparent 20%),
+                var(--bg);
+        }
+
+        .topbar{
+            position:sticky;
+            top:0;
+            z-index:20;
+            background:rgba(255,255,255,.88);
+            backdrop-filter:blur(16px);
+            border-bottom:1px solid rgba(226,232,240,.9);
+        }
+
+        .topbar-inner{
+            max-width:1360px;
+            margin:0 auto;
+            padding:16px 24px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:16px;
+        }
+
+        .brand{
+            display:flex;
+            align-items:center;
+            gap:14px;
+        }
+
+        .brand-mark{
+            width:44px;
+            height:44px;
+            border-radius:14px;
+            display:grid;
+            place-items:center;
+            color:#fff;
+            font-weight:800;
+            background:linear-gradient(135deg,var(--primary),var(--primary2));
+            box-shadow:0 14px 28px rgba(37,99,235,.22);
+        }
+
+        .brand h1{
+            margin:0;
+            font-size:18px;
+            letter-spacing:-.5px;
+        }
+
+        .brand p{
+            margin:2px 0 0;
+            color:var(--muted);
+            font-size:12px;
+        }
+
+        .actions{
+            display:flex;
+            gap:10px;
+            flex-wrap:wrap;
+        }
+
+        .btn{
+            height:44px;
+            padding:0 18px;
+            border:none;
+            border-radius:14px;
+            text-decoration:none;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            font-size:14px;
+            font-weight:700;
+            cursor:pointer;
+            transition:.25s ease;
+        }
+
+        .btn:hover{transform:translateY(-2px)}
+        .btn-primary{
+            color:#fff;
+            background:linear-gradient(135deg,var(--primary),var(--primary2));
+            box-shadow:0 12px 24px rgba(37,99,235,.18);
+        }
+        .btn-ghost{
+            color:#0f172a;
+            background:#fff;
+            border:1px solid var(--line);
+        }
+
+        .container{
+            max-width:1360px;
+            margin:0 auto;
+            padding:28px 24px 40px;
+        }
+
+        .hero{
+            display:grid;
+            grid-template-columns:1.05fr .95fr;
+            gap:24px;
+            margin-bottom:24px;
+        }
+
+        .panel{
+            background:rgba(255,255,255,.95);
+            border:1px solid rgba(226,232,240,.9);
+            border-radius:24px;
+            box-shadow:var(--shadow);
+        }
+
+        .hero-left{
+            padding:28px;
+            position:relative;
+            overflow:hidden;
+        }
+
+        .hero-left::after{
+            content:"";
+            position:absolute;
+            right:-80px;
+            top:-80px;
+            width:220px;
+            height:220px;
+            border-radius:50%;
+            background:radial-gradient(circle, rgba(37,99,235,.14), transparent 70%);
+        }
+
+        .badge{
+            display:inline-flex;
+            align-items:center;
+            gap:10px;
+            padding:10px 14px;
+            border-radius:999px;
+            background:#eff6ff;
+            color:#1d4ed8;
+            font-size:13px;
+            font-weight:700;
+            margin-bottom:18px;
+        }
+
+        .hero-left h2{
+            margin:0 0 8px;
+            font-size:32px;
+            letter-spacing:-1.1px;
+        }
+
+        .hero-left p{
+            margin:0;
+            color:var(--muted);
+            line-height:1.7;
+        }
+
+        .identity{
+            margin-top:22px;
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:14px;
+        }
+
+        .identity-box{
+            background:#f8fbff;
+            border:1px solid #dbeafe;
+            border-radius:18px;
+            padding:16px;
+        }
+
+        .identity-box .label{
+            font-size:12px;
+            color:#64748b;
+            text-transform:uppercase;
+            font-weight:700;
+            letter-spacing:.5px;
+        }
+
+        .identity-box .value{
+            margin-top:8px;
+            font-size:19px;
+            font-weight:800;
+            letter-spacing:-.5px;
+        }
+
+        .hero-right{
+            padding:24px;
+            display:flex;
+            align-items:center;
+        }
+
+        .chart-wrap{
+            width:100%;
+            height:320px;
+        }
+
+        .stats-grid{
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:18px;
+            margin-bottom:24px;
+        }
+
+        .stat{
+            background:rgba(255,255,255,.95);
+            border:1px solid rgba(226,232,240,.9);
+            border-radius:22px;
+            padding:24px;
+            box-shadow:var(--shadow);
+        }
+
+        .stat .small{
+            color:#64748b;
+            font-size:12px;
+            text-transform:uppercase;
+            font-weight:700;
+            letter-spacing:.45px;
+        }
+
+        .stat .big{
+            margin-top:10px;
+            font-size:28px;
+            font-weight:800;
+            letter-spacing:-1px;
+        }
+
+        .content-grid{
+            display:grid;
+            grid-template-columns: .78fr 1.22fr;
+            gap:24px;
+        }
+
+        .box{
+            padding:24px;
+        }
+
+        .box h3{
+            margin:0 0 8px;
+            font-size:20px;
+            letter-spacing:-.6px;
+        }
+
+        .muted{
+            color:var(--muted);
+            line-height:1.7;
+            font-size:14px;
+        }
+
+        .summary-list{
+            margin-top:18px;
+            display:grid;
+            gap:12px;
+        }
+
+        .summary-item{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:14px 16px;
+            border:1px solid var(--line);
+            border-radius:16px;
+            background:#fbfdff;
+        }
+
+        .summary-item .left{
+            color:#334155;
+            font-weight:600;
+        }
+
+        .summary-item .right{
+            font-weight:800;
+            letter-spacing:-.3px;
+        }
+
+        .table-wrap{
+            overflow:auto;
+            margin-top:18px;
+            border:1px solid var(--line);
+            border-radius:18px;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            min-width:760px;
+            background:#fff;
+        }
+
+        thead th{
+            position:sticky;
+            top:0;
+            background:#0f172a;
+            color:#fff;
+            font-size:13px;
+            text-align:left;
+            padding:14px 16px;
+            white-space:nowrap;
+        }
+
+        tbody td{
+            padding:14px 16px;
+            border-bottom:1px solid #eef2f7;
+            font-size:14px;
+            color:#334155;
+        }
+
+        tbody tr:hover{
+            background:#f8fbff;
+        }
+
+        .tag{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            min-width:88px;
+            height:30px;
+            padding:0 12px;
+            border-radius:999px;
+            font-size:12px;
+            font-weight:800;
+            text-transform:uppercase;
+            letter-spacing:.4px;
+        }
+
+        .tag.ingreso{
+            color:#065f46;
+            background:#d1fae5;
+        }
+
+        .tag.gasto{
+            color:#991b1b;
+            background:#fee2e2;
+        }
+
+        .footer{
+            text-align:center;
+            color:#64748b;
+            font-size:12px;
+            padding:12px 0 24px;
+        }
+
+        @media (max-width: 1180px){
+            .hero,.content-grid{grid-template-columns:1fr}
+            .stats-grid{grid-template-columns:repeat(2,1fr)}
+        }
+
+        @media (max-width: 720px){
+            .stats-grid,.identity{grid-template-columns:1fr}
+            .topbar-inner{padding:14px 16px}
+            .container{padding:20px 16px 34px}
+            .hero-left h2{font-size:26px}
+        }
     </style>
 </head>
 <body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">RF</div>
+                <div>
+                    <h1>Detalle del contribuyente</h1>
+                    <p>Renta Fácil • Perfil financiero consolidado</p>
+                </div>
+            </div>
 
-<div class="card">
-    <h2>Datos del Contribuyente</h2>
-    <p><strong>Nombre:</strong> {{ nombre }}</p>
-    <p><strong>Cédula:</strong> {{ cedula }}</p>
-    <p><strong>Patrimonio:</strong> ${{ "{:,.0f}".format(patrimonio) }}</p>
-    <p><strong>Deudas:</strong> ${{ "{:,.0f}".format(deudas) }}</p>
-</div>
+            <div class="actions">
+                <a class="btn btn-ghost" href="/admin">Volver al panel</a>
+                <a class="btn btn-primary" href="/admin/pdf/{{ cedula }}">Descargar PDF oficial</a>
+            </div>
+        </div>
+    </header>
 
-<div class="card">
-    <h2>Resumen Financiero 2025</h2>
-    <p><strong>Ingresos:</strong> ${{ "{:,.0f}".format(ingresos) }}</p>
-    <p><strong>Gastos:</strong> ${{ "{:,.0f}".format(gastos) }}</p>
-    <p><strong>Base Gravable:</strong> ${{ "{:,.0f}".format(base) }}</p>
+    <main class="container">
+        <section class="hero">
+            <div class="panel hero-left">
+                <div class="badge">Perfil tributario consolidado</div>
+                <h2>{{ nombre }}</h2>
+                <p>
+                    Vista detallada del comportamiento financiero acumulado del contribuyente,
+                    con base en transacciones procesadas por el sistema y proyección automática
+                    de su base gravable para el año 2025.
+                </p>
 
-    <a href="/admin/pdf/{{ cedula }}" class="btn">
-        Descargar Declaración Oficial (PDF)
-    </a>
-</div>
+                <div class="identity">
+                    <div class="identity-box">
+                        <div class="label">Cédula</div>
+                        <div class="value">{{ cedula }}</div>
+                    </div>
+                    <div class="identity-box">
+                        <div class="label">Patrimonio reportado</div>
+                        <div class="value">${{ "{:,.0f}".format(patrimonio) }}</div>
+                    </div>
+                    <div class="identity-box">
+                        <div class="label">Deudas reportadas</div>
+                        <div class="value">${{ "{:,.0f}".format(deudas) }}</div>
+                    </div>
+                    <div class="identity-box">
+                        <div class="label">Patrimonio líquido</div>
+                        <div class="value">${{ "{:,.0f}".format(patrimonio - deudas) }}</div>
+                    </div>
+                </div>
+            </div>
 
-<div class="card">
-    <h2>Transacciones Registradas</h2>
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Tipo</th>
-            <th>Descripción</th>
-            <th>Valor</th>
-        </tr>
-        {% for t in transacciones %}
-        <tr>
-            <td>{{ t.id_transaccion }}</td>
-            <td>{{ t.tipo }}</td>
-            <td>{{ t.descripcion }}</td>
-            <td>${{ "{:,.0f}".format(t.valor|float) }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
+            <div class="panel hero-right">
+                <div class="chart-wrap">
+                    <canvas id="userChart"></canvas>
+                </div>
+            </div>
+        </section>
 
+        <section class="stats-grid">
+            <div class="stat">
+                <div class="small">Ingresos acumulados</div>
+                <div class="big">${{ "{:,.0f}".format(ingresos) }}</div>
+            </div>
+            <div class="stat">
+                <div class="small">Gastos acumulados</div>
+                <div class="big">${{ "{:,.0f}".format(gastos) }}</div>
+            </div>
+            <div class="stat">
+                <div class="small">Base gravable</div>
+                <div class="big">${{ "{:,.0f}".format(base) }}</div>
+            </div>
+            <div class="stat">
+                <div class="small">Transacciones procesadas</div>
+                <div class="big">{{ transacciones|length }}</div>
+            </div>
+        </section>
+
+        <section class="content-grid">
+            <div class="panel box">
+                <h3>Resumen ejecutivo</h3>
+                <p class="muted">
+                    Indicadores principales utilizados por el sistema para estructurar
+                    la proyección tributaria y consolidar la declaración demostrativa.
+                </p>
+
+                <div class="summary-list">
+                    <div class="summary-item">
+                        <div class="left">Total ingresos registrados</div>
+                        <div class="right">${{ "{:,.0f}".format(ingresos) }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="left">Total gastos registrados</div>
+                        <div class="right">${{ "{:,.0f}".format(gastos) }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="left">Base gravable estimada</div>
+                        <div class="right">${{ "{:,.0f}".format(base) }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="left">Patrimonio bruto</div>
+                        <div class="right">${{ "{:,.0f}".format(patrimonio) }}</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="left">Pasivo / deudas</div>
+                        <div class="right">${{ "{:,.0f}".format(deudas) }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel box">
+                <h3>Transacciones registradas</h3>
+                <p class="muted">
+                    Historial consolidado de movimientos asociados al contribuyente dentro
+                    del entorno demostrativo de Renta Fácil.
+                </p>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Transacción</th>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in transacciones %}
+                            <tr>
+                                <td>{{ t.id_transaccion }}</td>
+                                <td>
+                                    <span class="tag {{ t.tipo }}">
+                                        {{ t.tipo }}
+                                    </span>
+                                </td>
+                                <td>{{ t.descripcion }}</td>
+                                <td>${{ "{:,.0f}".format(t.valor|float) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="footer">
+        Renta Fácil • Perfil tributario demostrativo © 2026
+    </div>
+
+    <script>
+        const c = document.getElementById('userChart').getContext('2d');
+
+        new Chart(c, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ingresos', 'Gastos', 'Base gravable'],
+                datasets: [{
+                    data: [{{ ingresos }}, {{ gastos }}, {{ base if base > 0 else 0 }}],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.88)',
+                        'rgba(239, 68, 68, 0.88)',
+                        'rgba(37, 99, 235, 0.88)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                cutout: '64%',
+                animation: {
+                    duration: 1400,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#334155',
+                            font: { weight: 600, size: 12 },
+                            padding: 18
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
