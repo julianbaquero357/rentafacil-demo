@@ -2,130 +2,167 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verificación - Renta Fácil</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            margin: 0;
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(to bottom, #f4f6f8, #e9eef6);
+        :root{
+            --bg1:#071a3d;
+            --bg2:#0b3d91;
+            --card:#ffffff;
+            --muted:#64748b;
+            --primary:#0b5ed7;
+            --primary2:#2563eb;
         }
 
-        .navbar {
-            background: linear-gradient(90deg, #0A2A66, #2F6FED);
-            color: white;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: 600;
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            min-height:100vh;
+            font-family:'Inter',sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(59,130,246,.22), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(16,185,129,.18), transparent 24%),
+                linear-gradient(135deg,var(--bg1),var(--bg2));
+            display:grid;
+            place-items:center;
+            padding:24px;
         }
 
-        .container {
-            max-width: 500px;
-            margin: 80px auto;
+        .card{
+            width:min(520px, 100%);
+            background:rgba(255,255,255,.96);
+            border-radius:24px;
+            padding:34px;
+            box-shadow:0 30px 80px rgba(2,6,23,.28);
+            border:1px solid rgba(255,255,255,.35);
+            backdrop-filter:blur(18px);
+            animation:fadeUp .75s ease both;
         }
 
-        .card {
-            background: linear-gradient(135deg, white, #f1f4fa);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
+        .mark{
+            width:56px;
+            height:56px;
+            border-radius:18px;
+            display:grid;
+            place-items:center;
+            background:linear-gradient(135deg,var(--primary),var(--primary2));
+            color:#fff;
+            font-weight:800;
+            font-size:20px;
+            margin-bottom:18px;
+            box-shadow:0 14px 28px rgba(37,99,235,.22);
         }
 
-        .card h2 {
-            color: #0A2A66;
-            margin-bottom: 10px;
+        h1{
+            margin:0 0 8px;
+            font-size:30px;
+            letter-spacing:-1px;
+            color:#0f172a;
         }
 
-        .card p {
-            color: #555;
-            margin-bottom: 20px;
+        p{
+            margin:0;
+            color:var(--muted);
+            line-height:1.7;
+            font-size:14px;
         }
 
-        input {
-            width: 80%;
-            padding: 12px;
-            margin: 15px 0;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            font-size: 18px;
-            text-align: center;
-            letter-spacing: 4px;
+        .demo-code{
+            margin:18px 0 0;
+            padding:14px 16px;
+            border-radius:16px;
+            background:#eff6ff;
+            border:1px solid #dbeafe;
+            color:#1d4ed8;
+            font-size:14px;
+            font-weight:700;
         }
 
-        button {
-            background: linear-gradient(135deg, #2F6FED, #4a85ff);
-            border: none;
-            color: white;
-            padding: 12px 30px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        .form{
+            margin-top:24px;
         }
 
-        .info {
-            font-size: 13px;
-            color: gray;
-            margin-top: 20px;
+        .label{
+            display:block;
+            font-size:13px;
+            font-weight:700;
+            color:#334155;
+            margin-bottom:8px;
         }
 
-        .codigo-demo {
-            background: #eef2f7;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            font-size: 14px;
-            color: #333;
+        .input{
+            width:100%;
+            height:54px;
+            border-radius:16px;
+            border:1px solid #dbe4f0;
+            padding:0 18px;
+            font-size:18px;
+            text-align:center;
+            letter-spacing:6px;
+            outline:none;
+            transition:.25s ease;
         }
 
-        .footer {
-            text-align: center;
-            margin-top: 60px;
-            font-size: 13px;
-            color: gray;
+        .input:focus{
+            border-color:#60a5fa;
+            box-shadow:0 0 0 5px rgba(59,130,246,.14);
+        }
+
+        .btn{
+            margin-top:16px;
+            width:100%;
+            height:54px;
+            border:none;
+            border-radius:16px;
+            background:linear-gradient(135deg,var(--primary),var(--primary2));
+            color:#fff;
+            font-size:15px;
+            font-weight:800;
+            cursor:pointer;
+            box-shadow:0 16px 28px rgba(37,99,235,.22);
+            transition:.25s ease;
+        }
+
+        .btn:hover{transform:translateY(-2px)}
+
+        .foot{
+            margin-top:18px;
+            text-align:center;
+            font-size:12px;
+            color:#64748b;
+        }
+
+        @keyframes fadeUp{
+            from{opacity:0; transform:translateY(18px)}
+            to{opacity:1; transform:translateY(0)}
         }
     </style>
 </head>
-
 <body>
-
-<div class="navbar">
-    Renta Fácil — Sistema Nacional de Declaración Automática
-</div>
-
-<div class="container">
     <div class="card">
-        <h2>Verificación de identidad</h2>
+        <div class="mark">RF</div>
+        <h1>Verificación de identidad</h1>
         <p>
-            Se ha enviado un código de verificación a su correo registrado.
-            Ingréselo a continuación para continuar.
+            Se ha generado un código de validación para confirmar el acceso
+            seguro a la información tributaria del contribuyente.
         </p>
 
-        <!-- CÓDIGO DEMO SI FALLA EL CORREO -->
         {% if codigo_demo %}
-        <div class="codigo-demo">
+        <div class="demo-code">
             Código de demostración: <strong>{{ codigo_demo }}</strong>
         </div>
         {% endif %}
 
-        <form action="/verificar" method="post">
-            <input type="text" name="codigo" placeholder="000000" required>
-            <br>
-            <button type="submit">Verificar código</button>
+        <form class="form" action="/verificar" method="post">
+            <label class="label">Código de verificación</label>
+            <input class="input" type="text" name="codigo" placeholder="000000" required>
+            <button class="btn" type="submit">Continuar</button>
         </form>
 
-        <div class="info">
-            Este proceso garantiza la seguridad de su información tributaria.
+        <div class="foot">
+            Validación segura • Renta Fácil © 2026
         </div>
     </div>
-
-    <div class="footer">
-        Sistema Renta Fácil © Gobierno Digital de Colombia
-    </div>
-</div>
-
 </body>
 </html>
