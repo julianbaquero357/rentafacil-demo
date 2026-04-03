@@ -21,15 +21,18 @@ from email_service import (
 app = Flask(__name__)
 app.secret_key = "clave_demo_rentafacil"
 
+
 # =====================================================
 # GOOGLE SHEETS
 # =====================================================
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
+
 def conectar_google():
     sa_json = json.loads(os.environ["GOOGLE_SA_JSON"])
     creds = Credentials.from_service_account_info(sa_json, scopes=SCOPES)
     return gspread.authorize(creds)
+
 
 def normalizar_cedula(valor):
     if valor is None:
@@ -39,10 +42,12 @@ def normalizar_cedula(valor):
     except:
         return str(valor).strip()
 
+
 # =====================================================
 # AUTO SYNC CONTROLADO
 # =====================================================
 SYNC_INTERVAL_SEC = 60
+
 
 def maybe_sync():
     conn = sqlite3.connect("renta.db")
@@ -60,6 +65,7 @@ def maybe_sync():
     last_ts = float(row[0]) if row and row[0] else 0
 
     now = time.time()
+
     if now - last_ts < SYNC_INTERVAL_SEC:
         conn.close()
         return {"synced": False}
@@ -78,6 +84,7 @@ def maybe_sync():
         print("Error sync:", e)
         return {"synced": False, "error": str(e)}
 
+
 # =====================================================
 # LOGIN ADMIN
 # =====================================================
@@ -88,6 +95,7 @@ def login_required(f):
             return redirect("/admin/login")
         return f(*args, **kwargs)
     return decorated_function
+
 
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
@@ -103,13 +111,15 @@ def admin_login():
 
     return render_template("admin_login.html")
 
+
 @app.route("/admin/logout")
 def admin_logout():
     session.pop("admin_logged", None)
     return redirect("/admin/login")
 
+
 # =====================================================
-# VALIDAR USUARIO
+# UTILIDADES DE USUARIO
 # =====================================================
 def usuario_existe(cedula):
     gc = conectar_google()
@@ -120,9 +130,7 @@ def usuario_existe(cedula):
     cedula = normalizar_cedula(cedula)
     return any(normalizar_cedula(u.get("cedula")) == cedula for u in usuarios)
 
-# =====================================================
-# OBTENER DATOS DE USUARIO
-# =====================================================
+
 def obtener_usuario_por_cedula(cedula):
     gc = conectar_google()
     sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
@@ -136,12 +144,13 @@ def obtener_usuario_por_cedula(cedula):
             return {
                 "cedula": cedula,
                 "nombre": u.get("nombre", "Contribuyente"),
-                "correo": u.get("correo") or "no-disponible@demo.co",
+                "correo": u.get("correo") or "rentafacildemo@gmail.com",
                 "patrimonio": float(u.get("patrimonio") or 0),
                 "deudas": float(u.get("deudas") or 0)
             }
 
     return None
+
 
 # =====================================================
 # CÁLCULO DE RENTA
@@ -173,13 +182,14 @@ def calcular_renta(cedula):
 
     return {
         "nombre": usuario["nombre"] if usuario else "Contribuyente",
-        "correo": usuario["correo"] if usuario else "no-disponible@demo.co",
+        "correo": usuario["correo"] if usuario else "rentafacildemo@gmail.com",
         "patrimonio": usuario["patrimonio"] if usuario else 0,
         "deudas": usuario["deudas"] if usuario else 0,
         "ingresos": ingresos,
         "gastos": gastos,
         "base": base
     }
+
 
 # =====================================================
 # RUTAS PÚBLICAS
@@ -189,9 +199,11 @@ def inicio():
     maybe_sync()
     return render_template("index.html")
 
+
 @app.route("/acerca")
 def acerca():
     return render_template("about.html")
+
 
 @app.route("/consultar", methods=["POST"])
 def consultar():
@@ -203,22 +215,21 @@ def consultar():
     if not usuario_existe(cedula):
         return "Usuario no encontrado"
 
-    usuario = obtener_usuario_por_cedula(cedula)
-    correo = usuario["correo"] if usuario else "no-disponible@demo.co"
-
     codigo = str(random.randint(100000, 999999))
     session["codigo"] = codigo
     session["cedula"] = cedula
 
-    # Si correo real está habilitado, intenta enviar
+    # Enviar correo real con Resend si está habilitado
     if correo_habilitado():
         try:
-            enviar_codigo_verificacion(correo, codigo)
+            enviar_codigo_verificacion("demo", codigo)
+            print("Correo de verificación enviado correctamente")
         except Exception as e:
             print("Error enviando verificación con Resend:", e)
 
-    # En demo, siempre mostramos el código también
+    # Para demo, el código también se muestra en pantalla
     return render_template("verificar.html", codigo_demo=codigo)
+
 
 @app.route("/verificar", methods=["POST"])
 def verificar():
@@ -232,8 +243,8 @@ def verificar():
         return redirect("/")
 
     resultado = calcular_renta(cedula)
-
     return render_template("resultado.html", data=resultado)
+
 
 # =====================================================
 # PANEL ADMIN
@@ -269,6 +280,7 @@ def admin_panel():
         total_gastos=total_gastos,
         total_base=total_base
     )
+
 
 @app.route("/admin/usuario", methods=["POST"])
 @login_required
@@ -324,6 +336,7 @@ def admin_usuario():
         transacciones=transacciones
     )
 
+
 @app.route("/admin/pdf/<cedula>")
 @login_required
 def admin_pdf(cedula):
@@ -361,10 +374,11 @@ def admin_pdf(cedula):
     pdf_bytes = generar_pdf_declaracion(data_pdf)
     filename = f"Declaracion_RentaFacil_210_DEMO_{cedula}_AG2025.pdf"
 
-    # Si correo real está habilitado, manda notificación
+    # Notificación real por correo cuando se genera el PDF
     if correo_habilitado():
         try:
             enviar_notificacion_pdf(resultado["correo"], resultado["nombre"], cedula)
+            print("Correo de notificación PDF enviado correctamente")
         except Exception as e:
             print("Error enviando notificación PDF:", e)
 
@@ -375,11 +389,13 @@ def admin_pdf(cedula):
         download_name=filename
     )
 
+
 @app.route("/admin/sync")
 @login_required
 def admin_sync():
     res = maybe_sync()
     return f"Sync: {res}"
+
 
 # =====================================================
 # HEALTH
@@ -387,6 +403,7 @@ def admin_sync():
 @app.route("/health")
 def health():
     return {"ok": True}
+
 
 # =====================================================
 # EJECUCIÓN
