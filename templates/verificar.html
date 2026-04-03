@@ -2,167 +2,169 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verificación - Renta Fácil</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
-        :root{
-            --bg1:#071a3d;
-            --bg2:#0b3d91;
-            --card:#ffffff;
-            --muted:#64748b;
-            --primary:#0b5ed7;
-            --primary2:#2563eb;
+        :root {
+            --bg: #f4f8fb;
+            --panel: #ffffff;
+            --line: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --primary: #0b5ed7;
+            --primary2: #2563eb;
+            --danger: #ef4444;
+            --shadow: 0 20px 44px rgba(15,23,42,.08);
         }
 
-        *{box-sizing:border-box}
-        body{
-            margin:0;
-            min-height:100vh;
-            font-family:'Inter',sans-serif;
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
             background:
-                radial-gradient(circle at top left, rgba(59,130,246,.22), transparent 28%),
-                radial-gradient(circle at bottom right, rgba(16,185,129,.18), transparent 24%),
-                linear-gradient(135deg,var(--bg1),var(--bg2));
-            display:grid;
-            place-items:center;
-            padding:24px;
+                radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 20%),
+                radial-gradient(circle at bottom right, rgba(16,185,129,.07), transparent 20%),
+                var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
 
-        .card{
-            width:min(520px, 100%);
-            background:rgba(255,255,255,.96);
-            border-radius:24px;
-            padding:34px;
-            box-shadow:0 30px 80px rgba(2,6,23,.28);
-            border:1px solid rgba(255,255,255,.35);
-            backdrop-filter:blur(18px);
-            animation:fadeUp .75s ease both;
+        .card {
+            width: 100%;
+            max-width: 420px;
+            background: white;
+            border-radius: 28px;
+            padding: 32px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--line);
+            animation: fadeIn 0.4s ease;
         }
 
-        .mark{
-            width:56px;
-            height:56px;
-            border-radius:18px;
-            display:grid;
-            place-items:center;
-            background:linear-gradient(135deg,var(--primary),var(--primary2));
-            color:#fff;
-            font-weight:800;
-            font-size:20px;
-            margin-bottom:18px;
-            box-shadow:0 14px 28px rgba(37,99,235,.22);
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        h1{
-            margin:0 0 8px;
-            font-size:30px;
-            letter-spacing:-1px;
-            color:#0f172a;
+        h1 {
+            margin: 0 0 10px;
+            font-size: 22px;
         }
 
-        p{
-            margin:0;
-            color:var(--muted);
-            line-height:1.7;
-            font-size:14px;
+        p {
+            margin: 0 0 20px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.6;
         }
 
-        .demo-code{
-            margin:18px 0 0;
-            padding:14px 16px;
-            border-radius:16px;
-            background:#eff6ff;
-            border:1px solid #dbeafe;
-            color:#1d4ed8;
-            font-size:14px;
-            font-weight:700;
+        input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            font-size: 16px;
+            margin-bottom: 16px;
+            text-align: center;
+            letter-spacing: 4px;
+            font-weight: 600;
         }
 
-        .form{
-            margin-top:24px;
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
         }
 
-        .label{
-            display:block;
-            font-size:13px;
-            font-weight:700;
-            color:#334155;
-            margin-bottom:8px;
+        button {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            border: none;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--primary), var(--primary2));
+            color: white;
+            transition: 0.2s;
         }
 
-        .input{
-            width:100%;
-            height:54px;
-            border-radius:16px;
-            border:1px solid #dbe4f0;
-            padding:0 18px;
-            font-size:18px;
-            text-align:center;
-            letter-spacing:6px;
-            outline:none;
-            transition:.25s ease;
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(37,99,235,0.25);
         }
 
-        .input:focus{
-            border-color:#60a5fa;
-            box-shadow:0 0 0 5px rgba(59,130,246,.14);
+        .footer {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
         }
 
-        .btn{
-            margin-top:16px;
-            width:100%;
-            height:54px;
-            border:none;
-            border-radius:16px;
-            background:linear-gradient(135deg,var(--primary),var(--primary2));
-            color:#fff;
-            font-size:15px;
-            font-weight:800;
-            cursor:pointer;
-            box-shadow:0 16px 28px rgba(37,99,235,.22);
-            transition:.25s ease;
+        .logo {
+            text-align: center;
+            margin-bottom: 18px;
+            font-weight: 800;
+            color: var(--primary);
         }
 
-        .btn:hover{transform:translateY(-2px)}
-
-        .foot{
-            margin-top:18px;
-            text-align:center;
-            font-size:12px;
-            color:#64748b;
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            text-align: center;
         }
 
-        @keyframes fadeUp{
-            from{opacity:0; transform:translateY(18px)}
-            to{opacity:1; transform:translateY(0)}
-        }
     </style>
 </head>
 <body>
+
     <div class="card">
-        <div class="mark">RF</div>
+
+        <div class="logo">
+            Renta Fácil
+        </div>
+
         <h1>Verificación de identidad</h1>
+
         <p>
-            Se ha generado un código de validación para confirmar el acceso
-            seguro a la información tributaria del contribuyente.
+            Se ha enviado un código de verificación al correo registrado.
+            Ingréselo para continuar con la consulta.
         </p>
 
-        {% if codigo_demo %}
-        <div class="demo-code">
-            Código de demostración: <strong>{{ codigo_demo }}</strong>
+        {% if error %}
+        <div class="error">
+            {{ error }}
         </div>
         {% endif %}
 
-        <form class="form" action="/verificar" method="post">
-            <label class="label">Código de verificación</label>
-            <input class="input" type="text" name="codigo" placeholder="000000" required>
-            <button class="btn" type="submit">Continuar</button>
+        <form method="POST" action="/verificar">
+            <input 
+                type="text" 
+                name="codigo" 
+                placeholder="••••••" 
+                maxlength="6"
+                required
+            >
+
+            <button type="submit">
+                Verificar código
+            </button>
         </form>
 
-        <div class="foot">
-            Validación segura • Renta Fácil © 2026
+        <div class="footer">
+            Sistema de validación segura • Renta Fácil
         </div>
+
     </div>
+
 </body>
 </html>
