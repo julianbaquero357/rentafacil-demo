@@ -7,7 +7,6 @@ MAIL_FROM = os.environ.get("MAIL_FROM")
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
 
-# 👉 correo fijo demo
 DESTINO_DEMO = "rentafacildemo@gmail.com"
 
 
@@ -15,10 +14,9 @@ def correo_habilitado():
     return bool(RESEND_API_KEY and MAIL_FROM)
 
 
-def enviar_codigo_verificacion(destinatario, codigo):
+def enviar_codigo_verificacion(codigo):
     if not correo_habilitado():
-        print("Correo no habilitado, código:", codigo)
-        return None
+        raise Exception("Correo no habilitado")
 
     asunto = "Código de verificación - Renta Fácil"
 
@@ -39,7 +37,7 @@ def enviar_codigo_verificacion(destinatario, codigo):
     })
 
 
-def enviar_notificacion_pdf(destinatario, nombre, cedula):
+def enviar_notificacion_pdf(nombre, cedula):
     if not correo_habilitado():
         return None
 
