@@ -157,7 +157,7 @@ def consultar():
 @app.route("/verificar", methods=["POST"])
 def verificar():
     if request.form["codigo"] != session.get("codigo"):
-        return "Código incorrecto"
+        return render_template("verificar.html", error="Código incorrecto")
 
     resultado = calcular_renta(session["cedula"])
     return render_template("resultado.html", data=resultado)
