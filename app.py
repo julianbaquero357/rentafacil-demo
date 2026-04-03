@@ -90,6 +90,48 @@ def obtener_usuario(cedula):
 
 
 # =====================================================
+# SYNC AUTOMÁTICO CONTROLADO
+# =====================================================
+SYNC_INTERVAL_SEC = 60
+
+
+def maybe_sync():
+    conn = sqlite3.connect("renta.db")
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS sync_state (
+            k TEXT PRIMARY KEY,
+            v TEXT
+        )
+    """)
+
+    cur.execute("SELECT v FROM sync_state WHERE k='last_sync_ts'")
+    row = cur.fetchone()
+    last_ts = float(row[0]) if row and row[0] else 0
+
+    now = time.time()
+
+    if now - last_ts < SYNC_INTERVAL_SEC:
+        conn.close()
+        return {"synced": False}
+
+    try:
+        nuevos = sync_transacciones()
+        cur.execute(
+            "INSERT OR REPLACE INTO sync_state (k, v) VALUES ('last_sync_ts', ?)",
+            (str(now),)
+        )
+        conn.commit()
+        conn.close()
+        return {"synced": True, "nuevos": nuevos}
+    except Exception as e:
+        conn.close()
+        print("Error sync:", e)
+        return {"synced": False, "error": str(e)}
+
+
+# =====================================================
 # CALCULO
 # =====================================================
 def calcular_renta(cedula):
@@ -114,6 +156,8 @@ def calcular_renta(cedula):
     return {
         "nombre": usuario["nombre"],
         "correo": usuario.get("correo", ""),
+        "patrimonio": float(usuario.get("patrimonio", 0) or 0),
+        "deudas": float(usuario.get("deudas", 0) or 0),
         "ingresos": ingresos,
         "gastos": gastos,
         "base": base
@@ -121,10 +165,11 @@ def calcular_renta(cedula):
 
 
 # =====================================================
-# RUTAS
+# RUTAS PÚBLICAS
 # =====================================================
 @app.route("/")
 def inicio():
+    maybe_sync()
     return render_template("index.html")
 
 
@@ -135,6 +180,8 @@ def acerca():
 
 @app.route("/consultar", methods=["POST"])
 def consultar():
+    maybe_sync()
+
     cedula = normalizar_cedula(request.form["cedula"])
 
     if not usuario_existe(cedula):
@@ -145,9 +192,12 @@ def consultar():
     session["codigo"] = codigo
     session["cedula"] = cedula
 
-    # 🔥 ENVÍO OBLIGATORIO
+    # ENVÍO REAL
     try:
-        enviar_codigo_verificacion(codigo)
+        if correo_habilitado():
+            enviar_codigo_verificacion(codigo)
+        else:
+            print("Correo no habilitado. Código generado:", codigo)
     except Exception as e:
         return f"Error enviando correo: {e}"
 
@@ -156,27 +206,145 @@ def consultar():
 
 @app.route("/verificar", methods=["POST"])
 def verificar():
-    if request.form["codigo"] != session.get("codigo"):
+    codigo_ingresado = request.form["codigo"].strip()
+    codigo_guardado = session.get("codigo")
+
+    if codigo_ingresado != codigo_guardado:
         return render_template("verificar.html", error="Código incorrecto")
 
-    resultado = calcular_renta(session["cedula"])
+    cedula = session.get("cedula")
+    if not cedula:
+        return redirect("/")
+
+    resultado = calcular_renta(cedula)
     return render_template("resultado.html", data=resultado)
 
 
 # =====================================================
-# PDF
+# ADMIN
 # =====================================================
+@app.route("/admin")
+@login_required
+def admin_panel():
+    maybe_sync()
+
+    gc = conectar_google()
+    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
+    usuarios = sheet.worksheet("usuarios").get_all_records()
+    historial = sheet.worksheet("historial").get_all_records()
+
+    total_ingresos = 0
+    total_gastos = 0
+
+    for r in historial:
+        if r["tipo"] == "ingreso":
+            total_ingresos += float(r["valor"])
+        elif r["tipo"] == "gasto":
+            total_gastos += float(r["valor"])
+
+    total_base = total_ingresos - total_gastos
+
+    return render_template(
+        "admin.html",
+        total_usuarios=len(usuarios),
+        total_ingresos=total_ingresos,
+        total_gastos=total_gastos,
+        total_base=total_base
+    )
+
+
+@app.route("/admin/usuario", methods=["POST"])
+@login_required
+def admin_usuario():
+    maybe_sync()
+
+    cedula = normalizar_cedula(request.form["cedula"])
+    usuario = obtener_usuario(cedula)
+
+    if not usuario:
+        return "Usuario no encontrado"
+
+    gc = conectar_google()
+    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
+    historial = sheet.worksheet("historial").get_all_records()
+
+    transacciones = []
+    ingresos = 0
+    gastos = 0
+
+    for r in historial:
+        if normalizar_cedula(r["cedula"]) == cedula:
+            valor = float(r["valor"])
+
+            transacciones.append({
+                "id_transaccion": r.get("id_transaccion", ""),
+                "tipo": r.get("tipo", ""),
+                "descripcion": r.get("descripcion", ""),
+                "valor": valor
+            })
+
+            if r["tipo"] == "ingreso":
+                ingresos += valor
+            else:
+                gastos += valor
+
+    base = ingresos - gastos
+
+    return render_template(
+        "admin_usuario.html",
+        nombre=usuario["nombre"],
+        cedula=cedula,
+        correo=usuario.get("correo", ""),
+        patrimonio=float(usuario.get("patrimonio", 0) or 0),
+        deudas=float(usuario.get("deudas", 0) or 0),
+        ingresos=ingresos,
+        gastos=gastos,
+        base=base,
+        transacciones=transacciones
+    )
+
+
 @app.route("/admin/pdf/<cedula>")
 @login_required
 def admin_pdf(cedula):
+    maybe_sync()
+
+    cedula = normalizar_cedula(cedula)
     resultado = calcular_renta(cedula)
 
-    pdf_bytes = generar_pdf_declaracion(resultado)
+    gc = conectar_google()
+    sheet = gc.open_by_key(os.environ["SHEET_USUARIOS_ID"])
+    historial = sheet.worksheet("historial").get_all_records()
+
+    transacciones = []
+    for r in historial:
+        if normalizar_cedula(r["cedula"]) == cedula:
+            transacciones.append({
+                "id_transaccion": r.get("id_transaccion", ""),
+                "tipo": r.get("tipo", ""),
+                "descripcion": r.get("descripcion", ""),
+                "valor": float(r.get("valor", 0))
+            })
+
+    data_pdf = {
+        "cedula": cedula,
+        "nombre": resultado["nombre"],
+        "correo": resultado["correo"],
+        "ingresos": resultado["ingresos"],
+        "gastos": resultado["gastos"],
+        "base": resultado["base"],
+        "patrimonio": resultado["patrimonio"],
+        "deudas": resultado["deudas"],
+        "transacciones": transacciones
+    }
+
+    pdf_bytes = generar_pdf_declaracion(data_pdf)
 
     try:
-        enviar_notificacion_pdf(resultado["nombre"], cedula)
-    except:
-        pass
+        if correo_habilitado():
+            enviar_notificacion_pdf(resultado["nombre"], cedula)
+    except Exception as e:
+        print("Error enviando notificación PDF:", e)
 
     return send_file(
         io.BytesIO(pdf_bytes),
@@ -184,6 +352,13 @@ def admin_pdf(cedula):
         as_attachment=True,
         download_name=f"declaracion_{cedula}.pdf"
     )
+
+
+@app.route("/admin/sync")
+@login_required
+def admin_sync():
+    res = maybe_sync()
+    return f"Sync: {res}"
 
 
 # =====================================================
